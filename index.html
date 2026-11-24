@@ -1,0 +1,2997 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>星愿 · Starlit Christmas</title>
+  <style>
+    /* ==========================================================================
+       Base Reset & Luxury Velvet Night Theme Variables
+       ========================================================================== */
+    :root {
+      --bg-deep: #040408;
+      --bg-mid: #0c0914;
+      --text-primary: #f7ecee;
+      --text-secondary: rgba(242, 228, 231, 0.78);
+      --text-muted: rgba(228, 214, 218, 0.5);
+      --pill-bg: rgba(14, 13, 22, 0.76);
+      --pill-border: rgba(255, 255, 255, 0.12);
+      --slider-bg: linear-gradient(135deg, #edd0d4 0%, #dfb8be 100%);
+      --slider-shadow: 0 4px 18px rgba(232, 194, 200, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      --active-pill-text: #191216;
+      --font-serif-en: 'Cinzel', 'Playfair Display', 'Didot', 'Bodoni MT', 'Georgia', 'Times New Roman', serif;
+      --font-serif-cn: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', 'Georgia', serif;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    body[data-theme="snow"] {
+      --slider-bg: linear-gradient(135deg, #e2f3fc 0%, #c4e3f6 100%);
+      --slider-shadow: 0 4px 18px rgba(182, 224, 250, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      --active-pill-text: #0e1c28;
+    }
+
+    body[data-theme="aurora"] {
+      --slider-bg: linear-gradient(135deg, #bdf6e4 0%, #86dfc8 100%);
+      --slider-shadow: 0 4px 18px rgba(126, 232, 204, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+      --active-pill-text: #08201c;
+    }
+
+    body[data-theme="rose"] {
+      --slider-bg: linear-gradient(135deg, #f5ced9 0%, #e6b2c2 100%);
+      --slider-shadow: 0 4px 18px rgba(242, 180, 202, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      --active-pill-text: #221018;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background-color: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+    }
+
+    /* Fullscreen 3D Canvas */
+    #scene {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    #scene:active {
+      cursor: grabbing;
+    }
+
+    /* ==========================================================================
+       Clean-Screen Mode Transitions
+       ========================================================================== */
+    .ui-layer {
+      transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1), transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    body.clean-mode .top-bar {
+      opacity: 0;
+      transform: translateY(-14px);
+      pointer-events: none;
+    }
+
+    body.clean-mode .mode-switcher {
+      opacity: 0;
+      transform: translateY(18px);
+      pointer-events: none;
+    }
+
+    body.clean-mode .blessing-block {
+      transform: translateY(34px);
+    }
+
+    .restore-ui-btn {
+      position: fixed;
+      top: max(16px, env(safe-area-inset-top, 16px));
+      right: 16px;
+      z-index: 35;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 13px;
+      border-radius: 999px;
+      background: rgba(14, 14, 22, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: rgba(248, 238, 240, 0.88);
+      font-family: var(--font-serif-cn);
+      font-size: 11.5px;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.92);
+      transition: all 0.3s ease;
+    }
+
+    body.clean-mode .restore-ui-btn {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    .restore-ui-btn:hover {
+      background: rgba(28, 26, 42, 0.85);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* ==========================================================================
+       Top Minimal Header & Interactive Pill Controls
+       ========================================================================== */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      padding: max(16px, env(safe-area-inset-top, 16px)) 16px 10px;
+      pointer-events: none;
+    }
+
+    .brand-header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+      flex-shrink: 1;
+    }
+
+    .brand-title {
+      font-family: var(--font-serif-cn);
+      font-size: clamp(11px, 2.5vw, 13px);
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      color: rgba(246, 232, 235, 0.92);
+      text-transform: uppercase;
+      text-shadow: 0 0 16px rgba(255, 224, 230, 0.32);
+      white-space: nowrap;
+    }
+
+    .brand-subtitle {
+      font-family: var(--font-serif-cn);
+      font-size: clamp(10px, 2.1vw, 11.5px);
+      letter-spacing: 0.13em;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 6px;
+      max-width: 60%;
+      pointer-events: auto;
+    }
+
+    .glass-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15, 14, 24, 0.68);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: rgba(244, 234, 237, 0.88);
+      font-family: var(--font-serif-cn);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.38);
+      white-space: nowrap;
+    }
+
+    .glass-chip:hover {
+      background: rgba(28, 26, 42, 0.88);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .glass-chip:active {
+      transform: scale(0.95);
+    }
+
+    .glass-chip.is-active {
+      background: rgba(232, 206, 212, 0.22);
+      border-color: rgba(240, 212, 218, 0.5);
+      color: #fff6f8;
+      box-shadow: 0 0 18px rgba(232, 198, 206, 0.26);
+    }
+
+    .chip-dot {
+      width: 5.5px;
+      height: 5.5px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.32);
+      transition: all 0.25s ease;
+    }
+
+    .glass-chip.is-active .chip-dot {
+      background: #9ef0ff;
+      box-shadow: 0 0 8px #9ef0ff;
+    }
+
+    /* Animated equaliser bars when music box is playing */
+    .music-bars {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 1.5px;
+      height: 10px;
+      width: 9px;
+    }
+
+    .music-bars span {
+      display: block;
+      width: 2px;
+      height: 3px;
+      border-radius: 1px;
+      background: rgba(255, 255, 255, 0.45);
+      transition: height 0.2s ease, background 0.2s ease;
+    }
+
+    .glass-chip.is-active .music-bars span {
+      background: #ffd9e2;
+      animation: eqPulse 0.9s ease-in-out infinite alternate;
+    }
+
+    .glass-chip.is-active .music-bars span:nth-child(2) {
+      animation-delay: 0.25s;
+    }
+
+    .glass-chip.is-active .music-bars span:nth-child(3) {
+      animation-delay: 0.5s;
+    }
+
+    @keyframes eqPulse {
+      0% { height: 3px; }
+      100% { height: 10px; }
+    }
+
+    /* ==========================================================================
+       Bottom Editorial Blessing & 4-Mode Sliding Frosted Glass Switcher
+       ========================================================================== */
+    .bottom-stage {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 14px max(16px, env(safe-area-inset-bottom, 16px));
+      pointer-events: none;
+    }
+
+    .blessing-block {
+      text-align: center;
+      margin-bottom: clamp(12px, 2.2vh, 20px);
+      pointer-events: auto;
+      cursor: pointer;
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .blessing-block:hover {
+      transform: translateY(-2px);
+    }
+
+    .blessing-main {
+      font-family: var(--font-serif-en);
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(28px, 6.8vw, 44px);
+      line-height: 1.1;
+      letter-spacing: 0.03em;
+      color: #f8eaec;
+      text-shadow:
+        0 0 24px rgba(246, 210, 218, 0.42),
+        0 2px 12px rgba(0, 0, 0, 0.75);
+      transition: color 0.6s ease, text-shadow 0.6s ease;
+    }
+
+    body[data-theme="snow"] .blessing-main {
+      color: #eef8ff;
+      text-shadow: 0 0 24px rgba(176, 224, 255, 0.45), 0 2px 12px rgba(0, 0, 0, 0.75);
+    }
+
+    body[data-theme="aurora"] .blessing-main {
+      color: #e8fff8;
+      text-shadow: 0 0 24px rgba(124, 242, 208, 0.45), 0 2px 12px rgba(0, 0, 0, 0.75);
+    }
+
+    .blessing-cn {
+      margin-top: 5px;
+      font-family: var(--font-serif-cn);
+      font-size: clamp(13px, 3vw, 15.5px);
+      font-weight: 400;
+      letter-spacing: 0.24em;
+      color: rgba(242, 228, 231, 0.88);
+      text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75);
+    }
+
+    .blessing-sub {
+      margin-top: 6px;
+      font-family: var(--font-serif-en);
+      font-size: clamp(8.5px, 1.9vw, 10px);
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: rgba(230, 216, 220, 0.52);
+    }
+
+    /* Bottom Dark Frosted Glass Pill Bar with Sliding Indicator */
+    .mode-switcher {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      width: 100%;
+      max-width: 448px;
+      padding: 5px;
+      border-radius: 18px;
+      background: var(--pill-bg);
+      border: 1px solid var(--pill-border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow:
+        0 14px 40px rgba(0, 0, 0, 0.7),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      pointer-events: auto;
+    }
+
+    .mode-slider {
+      position: absolute;
+      top: 5px;
+      bottom: 5px;
+      left: 5px;
+      width: calc((100% - 10px) / 4);
+      border-radius: 13px;
+      background: var(--slider-bg);
+      box-shadow: var(--slider-shadow);
+      transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1), background 0.45s ease, box-shadow 0.45s ease;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .mode-btn {
+      position: relative;
+      z-index: 2;
+      border: none;
+      border-radius: 13px;
+      padding: 10px 4px;
+      background: transparent;
+      color: rgba(236, 224, 227, 0.74);
+      font-family: var(--font-serif-cn);
+      font-size: clamp(11.5px, 2.8vw, 13px);
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: color 0.3s ease, transform 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .mode-btn:hover:not(.active) {
+      color: #ffffff;
+    }
+
+    .mode-btn:active {
+      transform: scale(0.96);
+    }
+
+    .mode-btn.active {
+      color: var(--active-pill-text);
+      font-weight: 600;
+    }
+
+    /* ==========================================================================
+       Custom Blessing Modal with One-Tap Presets
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(4, 4, 8, 0.74);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.28s ease;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 390px;
+      padding: 22px 20px 18px;
+      border-radius: 22px;
+      background: rgba(18, 16, 27, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      box-shadow: 0 26px 64px rgba(0, 0, 0, 0.8);
+      transform: translateY(12px) scale(0.96);
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .modal-backdrop.open .modal-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-title {
+      font-family: var(--font-serif-cn);
+      font-size: 15px;
+      letter-spacing: 0.16em;
+      color: #f7e9eb;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .preset-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    .preset-chip {
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(240, 226, 230, 0.82);
+      font-family: var(--font-serif-cn);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .preset-chip:hover {
+      background: rgba(232, 198, 206, 0.22);
+      border-color: rgba(232, 198, 206, 0.45);
+      color: #fff;
+    }
+
+    .field-group {
+      margin-bottom: 11px;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+    }
+
+    .field-input {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      background: rgba(8, 8, 14, 0.78);
+      color: #fff7f8;
+      font-family: var(--font-serif-cn);
+      font-size: 13.5px;
+      outline: none;
+      transition: border-color 0.2s ease;
+      user-select: text;
+    }
+
+    .field-input:focus {
+      border-color: rgba(238, 200, 208, 0.6);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+      font-family: var(--font-serif-cn);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .modal-btn:hover {
+      background: rgba(255, 255, 255, 0.11);
+      color: #fff;
+    }
+
+    .modal-btn.primary {
+      background: #e6c6ca;
+      color: #191216;
+      border-color: transparent;
+      font-weight: 600;
+    }
+
+    .modal-btn.primary:hover {
+      background: #f0d5d8;
+    }
+
+    /* Subtle First-Load Gesture Hint */
+    .gesture-hint {
+      position: fixed;
+      top: 48%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 15;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: rgba(14, 13, 22, 0.64);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: rgba(244, 232, 235, 0.8);
+      font-family: var(--font-serif-cn);
+      font-size: 11.5px;
+      letter-spacing: 0.12em;
+      pointer-events: none;
+      opacity: 0;
+      animation: hintFade 4.8s ease 0.7s forwards;
+      white-space: nowrap;
+    }
+
+    @keyframes hintFade {
+      0% { opacity: 0; transform: translate(-50%, -42%); }
+      18% { opacity: 1; transform: translate(-50%, -50%); }
+      78% { opacity: 1; transform: translate(-50%, -50%); }
+      100% { opacity: 0; transform: translate(-50%, -56%); }
+    }
+  </style>
+</head>
+<body data-theme="ribbon">
+
+  <!-- Fullscreen 3D Particle & Aurora Canvas -->
+  <canvas id="scene"></canvas>
+
+  <!-- Restore UI Floating Pill (Visible in Clean-Screen Mode) -->
+  <button id="restoreUiBtn" class="restore-ui-btn" type="button" aria-label="显示界面">
+    <span>👁 显示界面</span>
+  </button>
+
+  <!-- Top Minimal Header & Interactive Controls -->
+  <header class="top-bar ui-layer">
+    <div class="brand-header">
+      <div class="brand-title">星愿 · STARLIT CHRISTMAS</div>
+      <div class="brand-subtitle">愿以星河为引，点亮冬日奇迹</div>
+    </div>
+    <div class="top-actions">
+      <button id="snowToggleBtn" class="glass-chip is-active" type="button" aria-label="切换飘雪">
+        <span class="chip-dot"></span>
+        <span>❄ 飘雪</span>
+      </button>
+      <button id="ribbonToggleBtn" class="glass-chip is-active" type="button" aria-label="切换灯条">
+        <span class="chip-dot"></span>
+        <span>💡 灯条</span>
+      </button>
+      <button id="musicBtn" class="glass-chip" type="button" aria-label="八音盒音乐">
+        <span class="music-bars" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>🎵 八音盒</span>
+      </button>
+      <button id="wishBtn" class="glass-chip" type="button" aria-label="许愿流星">
+        <span>🌠 许愿</span>
+      </button>
+      <button id="editBlessingBtn" class="glass-chip" type="button" aria-label="自定义寄语">
+        <span>✎ 寄语</span>
+      </button>
+      <button id="cleanModeBtn" class="glass-chip" type="button" aria-label="纯净模式">
+        <span>👁 纯净</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Subtle First-Load Gesture Hint -->
+  <div class="gesture-hint">滑动旋转圣诞树 · 点击绽放星愿烟花</div>
+
+  <!-- Bottom Editorial Typography & 4-Theme Sliding Switcher -->
+  <footer class="bottom-stage">
+    <div id="blessingTrigger" class="blessing-block ui-layer" title="点击自定义节日寄语">
+      <h1 id="blessingTitle" class="blessing-main">Merry Christmas</h1>
+      <p id="blessingCn" class="blessing-cn">愿所有美好，如期而至</p>
+      <p id="blessingSub" class="blessing-sub">✦ MAY YOUR WISHES FIND THEIR LIGHT ✦</p>
+    </div>
+
+    <nav class="mode-switcher ui-layer" aria-label="圣诞树样式切换">
+      <div id="modeSlider" class="mode-slider"></div>
+      <button class="mode-btn active" data-mode="ribbon" data-index="0" type="button">星愿灯条</button>
+      <button class="mode-btn" data-mode="snow" data-index="1" type="button">初雪覆松</button>
+      <button class="mode-btn" data-mode="aurora" data-index="2" type="button">极光幻梦</button>
+      <button class="mode-btn" data-mode="rose" data-index="3" type="button">柔粉星梦</button>
+    </nav>
+  </footer>
+
+  <!-- Custom Blessing Editor Modal -->
+  <div id="blessingModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalHeading">
+    <div class="modal-card">
+      <div id="modalHeading" class="modal-title">✦ 定制专属圣诞寄语 ✦</div>
+      <div class="preset-row">
+        <button class="preset-chip" type="button" data-title="Merry Christmas" data-cn="愿所有美好，如期而至" data-sub="✦ MAY YOUR WISHES FIND THEIR LIGHT ✦">星愿经典</button>
+        <button class="preset-chip" type="button" data-title="Winter Magic" data-cn="初雪落满枝头，浪漫不期而遇" data-sub="✦ LET IT SNOW · WINTER WONDERLAND ✦">初雪浪漫</button>
+        <button class="preset-chip" type="button" data-title="Starlit Wishes" data-cn="岁岁常欢愉，万事皆胜意" data-sub="✦ PEACE · JOY · ENDLESS WONDER ✦">岁岁欢愉</button>
+        <button class="preset-chip" type="button" data-title="For You" data-cn="见字如晤，圣诞快乐" data-sub="✦ WARMEST WISHES THIS WINTER NIGHT ✦">专属心意</button>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="inputTitle">英文 / 主标题</label>
+        <input id="inputTitle" class="field-input" type="text" maxlength="32" value="Merry Christmas" />
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="inputCn">中文祝福语</label>
+        <input id="inputCn" class="field-input" type="text" maxlength="28" value="愿所有美好，如期而至" />
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="inputSub">星愿副标</label>
+        <input id="inputSub" class="field-input" type="text" maxlength="46" value="✦ MAY YOUR WISHES FIND THEIR LIGHT ✦" />
+      </div>
+      <div class="modal-actions">
+        <button id="closeModalBtn" class="modal-btn" type="button">取消</button>
+        <button id="saveBlessingBtn" class="modal-btn primary" type="button">保存寄语</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ==========================================================================
+     * 星愿 · Starlit Christmas — Fail-Safe 3D Botanical Spruce Engine (60fps)
+     * Unified Back-to-Front Painter's Algorithm + Offscreen Botanical Sprites
+     * ==========================================================================
+     */
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('scene');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d', { alpha: false });
+      if (!ctx) return;
+
+      // UI References
+      const modeButtons = document.querySelectorAll('.mode-btn');
+      const modeSlider = document.getElementById('modeSlider');
+      const snowToggleBtn = document.getElementById('snowToggleBtn');
+      const ribbonToggleBtn = document.getElementById('ribbonToggleBtn');
+      const musicBtn = document.getElementById('musicBtn');
+      const wishBtn = document.getElementById('wishBtn');
+      const editBlessingBtn = document.getElementById('editBlessingBtn');
+      const cleanModeBtn = document.getElementById('cleanModeBtn');
+      const restoreUiBtn = document.getElementById('restoreUiBtn');
+      const blessingTrigger = document.getElementById('blessingTrigger');
+      const blessingModal = document.getElementById('blessingModal');
+      const closeModalBtn = document.getElementById('closeModalBtn');
+      const saveBlessingBtn = document.getElementById('saveBlessingBtn');
+      const presetChips = document.querySelectorAll('.preset-chip');
+      const inputTitle = document.getElementById('inputTitle');
+      const inputCn = document.getElementById('inputCn');
+      const inputSub = document.getElementById('inputSub');
+      const elTitle = document.getElementById('blessingTitle');
+      const elCn = document.getElementById('blessingCn');
+      const elSub = document.getElementById('blessingSub');
+
+      // Viewport & HiDPI State (with safe non-zero fallbacks)
+      let width = window.innerWidth || document.documentElement.clientWidth || 390;
+      let height = window.innerHeight || document.documentElement.clientHeight || 844;
+      let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      // 3D Botanical Tree Geometry Constants
+      const TREE_HEIGHT = 445;
+      const TREE_BASE_RADIUS = 182;
+      const CAMERA_FOV = 660;
+      const CAMERA_DIST = 710;
+
+      // Interactive 3D Camera State
+      const camera = {
+        rotY: 0.36,
+        velY: 0.004,
+        baseSpeed: 0.004,
+        rotX: 0.12,
+        targetRotX: 0.12,
+        zoom: 1.0,
+        targetZoom: 1.0,
+        isDragging: false,
+        lastX: 0,
+        lastY: 0,
+        dragDistance: 0,
+        pinchStartDist: 0,
+        pinchStartZoom: 1.0
+      };
+
+      // ========================================================================
+      // Offscreen Pre-Rendered Sprites (Glow Halos, Pine Sprays, Snow Tufts)
+      // ========================================================================
+      const glowSpriteCache = new Map();
+      const needleSpriteCache = new Map();
+      const snowTuftCache = new Map();
+
+      /**
+       * Creates and caches a soft radial glow halo on an offscreen canvas.
+       */
+      function getGlowSprite(r, g, b, sharpness = 0.3) {
+        const qr = Math.round(r / 8) * 8;
+        const qg = Math.round(g / 8) * 8;
+        const qb = Math.round(b / 8) * 8;
+        const key = `g_${qr}_${qg}_${qb}_${sharpness}`;
+        let spr = glowSpriteCache.get(key);
+        if (spr) return spr;
+
+        if (glowSpriteCache.size > 180) glowSpriteCache.clear();
+
+        const size = 64;
+        const half = size * 0.5;
+        spr = document.createElement('canvas');
+        spr.width = size;
+        spr.height = size;
+        const sctx = spr.getContext('2d');
+
+        const grad = sctx.createRadialGradient(half, half, 0, half, half, half);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        grad.addColorStop(sharpness, `rgba(${qr}, ${qg}, ${qb}, 0.85)`);
+        grad.addColorStop(0.65, `rgba(${qr}, ${qg}, ${qb}, 0.22)`);
+        grad.addColorStop(1, `rgba(${qr}, ${qg}, ${qb}, 0)`);
+
+        sctx.fillStyle = grad;
+        sctx.fillRect(0, 0, size, size);
+        glowSpriteCache.set(key, spr);
+        return spr;
+      }
+
+      /**
+       * Creates and caches a feathery botanical pine-needle cluster sprite
+       * with individual radiating conifer needles around a woody twig spine.
+       */
+      function getNeedleSpraySprite(r, g, b, variant = 0) {
+        const qr = Math.round(r / 6) * 6;
+        const qg = Math.round(g / 6) * 6;
+        const qb = Math.round(b / 6) * 6;
+        const key = `n_${qr}_${qg}_${qb}_${variant}`;
+        let spr = needleSpriteCache.get(key);
+        if (spr) return spr;
+
+        if (needleSpriteCache.size > 240) needleSpriteCache.clear();
+
+        const size = 52;
+        const half = size * 0.5;
+        spr = document.createElement('canvas');
+        spr.width = size;
+        spr.height = size;
+        const sctx = spr.getContext('2d');
+
+        // Soft organic inner foliage body
+        const coreGrad = sctx.createRadialGradient(half, half, 1, half, half, half * 0.62);
+        coreGrad.addColorStop(0, `rgba(${Math.max(0, qr - 8)}, ${Math.max(0, qg - 8)}, ${Math.max(0, qb - 8)}, 0.94)`);
+        coreGrad.addColorStop(0.68, `rgba(${qr}, ${qg}, ${qb}, 0.52)`);
+        coreGrad.addColorStop(1, `rgba(${qr}, ${qg}, ${qb}, 0)`);
+        sctx.fillStyle = coreGrad;
+        sctx.beginPath();
+        sctx.arc(half, half, half * 0.62, 0, Math.PI * 2);
+        sctx.fill();
+
+        // Central twig spine
+        sctx.strokeStyle = `rgba(${Math.max(0, qr - 18)}, ${Math.max(0, qg - 20)}, ${Math.max(0, qb - 18)}, 0.85)`;
+        sctx.lineWidth = 1.6;
+        sctx.lineCap = 'round';
+        sctx.beginPath();
+        sctx.moveTo(half * 0.35, half);
+        sctx.lineTo(half * 1.65, half);
+        sctx.stroke();
+
+        // Radiating individual pine needle strokes
+        const needleCount = 18;
+        const tipR = Math.min(255, qr + 26);
+        const tipG = Math.min(255, qg + 30);
+        const tipB = Math.min(255, qb + 24);
+
+        for (let i = 0; i < needleCount; i++) {
+          const baseAngle = (i / needleCount) * Math.PI * 2 + variant * 0.42;
+          const jitter = Math.sin(i * 3.7 + variant * 2.1) * 0.14;
+          const a = baseAngle + jitter;
+          const innerDist = 2 + (i % 3) * 1.4;
+          const outerDist = half * (0.74 + 0.22 * Math.cos(i * 2.3 + variant));
+
+          sctx.strokeStyle = i % 3 === 0
+            ? `rgba(${tipR}, ${tipG}, ${tipB}, 0.94)`
+            : `rgba(${qr}, ${qg}, ${qb}, 0.96)`;
+          sctx.lineWidth = i % 2 === 0 ? 1.6 : 1.25;
+
+          sctx.beginPath();
+          sctx.moveTo(half + Math.cos(a) * innerDist, half + Math.sin(a) * innerDist);
+          sctx.lineTo(half + Math.cos(a) * outerDist, half + Math.sin(a) * outerDist);
+          sctx.stroke();
+        }
+
+        needleSpriteCache.set(key, spr);
+        return spr;
+      }
+
+      /**
+       * Creates and caches a soft pillowy snow tuft sprite with sunlit top
+       * highlight and cool blue-grey shadow underside.
+       */
+      function getSnowTuftSprite(r, g, b) {
+        const qr = Math.round(r / 6) * 6;
+        const qg = Math.round(g / 6) * 6;
+        const qb = Math.round(b / 6) * 6;
+        const key = `s_${qr}_${qg}_${qb}`;
+        let spr = snowTuftCache.get(key);
+        if (spr) return spr;
+
+        if (snowTuftCache.size > 120) snowTuftCache.clear();
+
+        const w = 48;
+        const h = 28;
+        spr = document.createElement('canvas');
+        spr.width = w;
+        spr.height = h;
+        const sctx = spr.getContext('2d');
+
+        // Cool blue-grey underside shadow
+        sctx.save();
+        sctx.translate(w * 0.5, h * 0.58);
+        sctx.scale(1, 0.52);
+        const shadeGrad = sctx.createRadialGradient(0, 2, 2, 0, 2, w * 0.44);
+        shadeGrad.addColorStop(0, `rgba(${Math.max(0, qr - 48)}, ${Math.max(0, qg - 34)}, ${Math.max(0, qb - 16)}, 0.85)`);
+        shadeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        sctx.fillStyle = shadeGrad;
+        sctx.beginPath();
+        sctx.arc(0, 2, w * 0.44, 0, Math.PI * 2);
+        sctx.fill();
+        sctx.restore();
+
+        // Sunlit/moonlit pillowy snow cap on top
+        sctx.save();
+        sctx.translate(w * 0.5, h * 0.44);
+        sctx.scale(1, 0.48);
+        const topGrad = sctx.createRadialGradient(-3, -3, 1, 0, 0, w * 0.42);
+        topGrad.addColorStop(0, '#ffffff');
+        topGrad.addColorStop(0.55, `rgba(${qr}, ${qg}, ${qb}, 0.94)`);
+        topGrad.addColorStop(1, `rgba(${qr}, ${qg}, ${qb}, 0)`);
+        sctx.fillStyle = topGrad;
+        sctx.beginPath();
+        sctx.arc(0, 0, w * 0.42, 0, Math.PI * 2);
+        sctx.fill();
+        sctx.restore();
+
+        snowTuftCache.set(key, spr);
+        return spr;
+      }
+
+      // ========================================================================
+      // Four Visual Themes (星愿灯条 / 初雪覆松 / 极光幻梦 / 柔粉星梦)
+      // ========================================================================
+      const THEMES = {
+        ribbon: {
+          name: 'ribbon',
+          bgTop: [4, 4, 9],
+          bgMid: [13, 9, 20],
+          nebulaA: [76, 36, 58],
+          nebulaB: [28, 42, 68],
+          auroraStrength: 0.0,
+          barkDark: [34, 19, 12],
+          barkLight: [82, 50, 32],
+          foliageDark: [6, 28, 16],
+          foliageMid: [16, 66, 38],
+          foliageLight: [38, 122, 72],
+          snowBlanketColor: [232, 242, 240],
+          snowBlanketAlpha: 0.14,
+          snowWeight: 0.08,
+          ribbonCore: [255, 244, 236],
+          ribbonGlow: [242, 184, 196],
+          ribbonStrength: 0.9,
+          sparkleA: [255, 224, 176],
+          sparkleB: [255, 192, 212],
+          starCore: [255, 246, 240],
+          starGlow: [246, 192, 202],
+          ringColor: [236, 192, 200],
+          snowDensity: 0.35,
+          snowTint: [246, 238, 242],
+          baubles: [
+            [236, 194, 126],
+            [228, 158, 174],
+            [188, 56, 78],
+            [244, 236, 234]
+          ],
+          gifts: [
+            { box: [224, 166, 178], shade: [168, 112, 124], ribbon: [255, 246, 247] },
+            { box: [222, 192, 138], shade: [166, 138, 88],  ribbon: [255, 250, 236] },
+            { box: [238, 230, 230], shade: [184, 174, 176], ribbon: [226, 170, 182] }
+          ]
+        },
+        snow: {
+          name: 'snow',
+          bgTop: [4, 7, 14],
+          bgMid: [11, 19, 34],
+          nebulaA: [36, 76, 116],
+          nebulaB: [24, 48, 82],
+          auroraStrength: 0.08,
+          barkDark: [32, 21, 16],
+          barkLight: [76, 52, 40],
+          foliageDark: [7, 26, 36],
+          foliageMid: [18, 58, 72],
+          foliageLight: [40, 98, 116],
+          snowBlanketColor: [244, 251, 255],
+          snowBlanketAlpha: 1.0,
+          snowWeight: 1.0,
+          ribbonCore: [255, 246, 224],
+          ribbonGlow: [255, 210, 148],
+          ribbonStrength: 0.56,
+          sparkleA: [216, 246, 255],
+          sparkleB: [255, 255, 255],
+          starCore: [246, 252, 255],
+          starGlow: [172, 224, 255],
+          ringColor: [188, 228, 252],
+          snowDensity: 1.0,
+          snowTint: [242, 250, 255],
+          baubles: [
+            [176, 218, 244],
+            [236, 244, 252],
+            [132, 178, 216],
+            [216, 228, 240]
+          ],
+          gifts: [
+            { box: [194, 222, 240], shade: [140, 170, 192], ribbon: [255, 255, 255] },
+            { box: [236, 242, 248], shade: [178, 190, 202], ribbon: [144, 198, 236] },
+            { box: [180, 204, 226], shade: [128, 152, 176], ribbon: [244, 250, 255] }
+          ]
+        },
+        aurora: {
+          name: 'aurora',
+          bgTop: [3, 6, 12],
+          bgMid: [8, 18, 28],
+          nebulaA: [26, 126, 108],
+          nebulaB: [88, 46, 128],
+          auroraStrength: 1.0,
+          barkDark: [28, 19, 17],
+          barkLight: [68, 48, 42],
+          foliageDark: [6, 26, 32],
+          foliageMid: [16, 62, 68],
+          foliageLight: [36, 114, 112],
+          snowBlanketColor: [216, 248, 242],
+          snowBlanketAlpha: 0.56,
+          snowWeight: 0.48,
+          ribbonCore: [232, 255, 248],
+          ribbonGlow: [92, 236, 198],
+          ribbonStrength: 0.84,
+          sparkleA: [132, 252, 216],
+          sparkleB: [208, 168, 255],
+          starCore: [242, 255, 252],
+          starGlow: [124, 244, 212],
+          ringColor: [136, 238, 212],
+          snowDensity: 0.55,
+          snowTint: [226, 252, 246],
+          baubles: [
+            [112, 232, 202],
+            [184, 146, 236],
+            [226, 248, 244],
+            [144, 214, 238]
+          ],
+          gifts: [
+            { box: [134, 216, 196], shade: [86, 162, 146],  ribbon: [244, 255, 252] },
+            { box: [182, 152, 224], shade: [132, 102, 174], ribbon: [224, 252, 244] },
+            { box: [224, 242, 242], shade: [168, 190, 192], ribbon: [108, 224, 194] }
+          ]
+        },
+        rose: {
+          name: 'rose',
+          bgTop: [9, 4, 10],
+          bgMid: [21, 10, 22],
+          nebulaA: [112, 42, 74],
+          nebulaB: [68, 28, 56],
+          auroraStrength: 0.0,
+          barkDark: [36, 18, 18],
+          barkLight: [82, 44, 42],
+          foliageDark: [44, 14, 26],
+          foliageMid: [96, 36, 58],
+          foliageLight: [158, 74, 102],
+          snowBlanketColor: [255, 226, 236],
+          snowBlanketAlpha: 0.46,
+          snowWeight: 0.34,
+          ribbonCore: [255, 244, 234],
+          ribbonGlow: [255, 178, 204],
+          ribbonStrength: 0.86,
+          sparkleA: [255, 224, 178],
+          sparkleB: [255, 188, 218],
+          starCore: [255, 246, 238],
+          starGlow: [255, 186, 214],
+          ringColor: [248, 184, 208],
+          snowDensity: 0.48,
+          snowTint: [255, 236, 244],
+          baubles: [
+            [244, 178, 198],
+            [238, 204, 152],
+            [250, 236, 240],
+            [208, 96, 132]
+          ],
+          gifts: [
+            { box: [240, 176, 196], shade: [186, 118, 140], ribbon: [255, 244, 224] },
+            { box: [238, 206, 156], shade: [184, 152, 104], ribbon: [255, 246, 248] },
+            { box: [248, 234, 238], shade: [196, 176, 182], ribbon: [234, 156, 184] }
+          ]
+        }
+      };
+
+      let currentThemeKey = 'ribbon';
+      let ribbonEnabled = true;
+      let snowEnabled = true;
+      const visual = JSON.parse(JSON.stringify(THEMES.ribbon));
+
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function lerpColor(curr, target, t) {
+        curr[0] = lerp(curr[0], target[0], t);
+        curr[1] = lerp(curr[1], target[1], t);
+        curr[2] = lerp(curr[2], target[2], t);
+      }
+
+      function rgb(c, a = 1) {
+        return `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${a.toFixed(3)})`;
+      }
+
+      // ========================================================================
+      // 3D Botanical Scene Collections
+      // ========================================================================
+      const trunkSegments = [];     // Tapered central bark trunk & woody bough limbs
+      const needleClusters = [];    // Directional pine-needle sprays on boughs & side-twigs
+      const snowPillows = [];       // Upper-surface (+y) snow tufts resting on top of boughs
+      const fairyLights = [];       // Warm twinkling fairy-light bulbs nestled in foliage
+      const branchTipAnchors = [];  // Outer bough tips for hanging 3D metallic baubles
+      const ribbonNodes = [];       // Slender 3.5-turn micro-LED spiral light strip nodes
+      let ribbonPulsePhase = 0;     // Shimmering wave gliding upward along the light wire
+      const baubles = [];           // 26 3D reflective metallic spherical ornaments with strings
+      const giftBoxes = [];         // 10 3D perspective gift boxes around the base & lower boughs
+      const groundRings = [];       // 3 concentric floor constellation rings
+      const vortexParticles = [];   // Ground galaxy spiral stardust + floating fireflies
+      const bgStars = [];           // Distant parallax stars & bokeh orbs
+      const snowflakes = [];        // Multi-layered falling snow & crystals
+      const shootingStars = [];     // Periodic & wish-triggered shooting stars
+      const wishFireworks = [];     // Rising wish trails & blooming stardust fireworks
+
+      // Unified Painter's-Algorithm Render List (sorted back-to-front every frame)
+      const renderList = [];
+
+      /**
+       * Helper: Evaluates 3D position along a primary bough with natural
+       * catenary gravity droop + subtle upward tip curl.
+       */
+      function evalBoughPoint(bough, s) {
+        const horizR = bough.length * s;
+        const gravitySag = bough.droop * Math.pow(s, 1.38);
+        const tipLift = bough.tipCurl * Math.pow(Math.max(0, s - 0.7) / 0.3, 2.1);
+        const y = bough.yBase - gravitySag + tipLift;
+        const x = Math.cos(bough.azimuth) * horizR;
+        const z = Math.sin(bough.azimuth) * horizR;
+        return { x, y, z, s };
+      }
+
+      /**
+       * 1. Build Hierarchical 3D Botanical Spruce Skeleton:
+       *    - Tapered central bark trunk + grounded root mound
+       *    - 18 golden-angle whorls with irregular tier-to-tier spruce silhouette
+       *    - Gravity droop, upward tip curls & alternating secondary side-twigs
+       *    - Directional pine-needle sprays & upper-surface (+y) snow tufts
+       */
+      function initBotanicalTree() {
+        trunkSegments.length = 0;
+        needleClusters.length = 0;
+        snowPillows.length = 0;
+        fairyLights.length = 0;
+        branchTipAnchors.length = 0;
+
+        let seed = 4219;
+        function rand() {
+          seed = (seed * 16807) % 2147483647;
+          return (seed - 1) / 2147483646;
+        }
+
+        // A. Central Tapered Bark Trunk (y = -8 at snowy root mound up to y = TREE_HEIGHT + 8)
+        const TRUNK_STEPS = 46;
+        for (let i = 0; i < TRUNK_STEPS; i++) {
+          const t0 = i / TRUNK_STEPS;
+          const t1 = (i + 1) / TRUNK_STEPS;
+          const y0 = -8 + t0 * (TREE_HEIGHT + 14);
+          const y1 = -8 + t1 * (TREE_HEIGHT + 14);
+          const swayX0 = Math.sin(t0 * 4.2) * 2.2 * (1 - t0 * 0.4);
+          const swayZ0 = Math.cos(t0 * 3.5) * 1.8 * (1 - t0 * 0.4);
+          const swayX1 = Math.sin(t1 * 4.2) * 2.2 * (1 - t1 * 0.4);
+          const swayZ1 = Math.cos(t1 * 3.5) * 1.8 * (1 - t1 * 0.4);
+          const radius = lerp(14.5, 2.2, Math.pow(t0, 0.85));
+
+          trunkSegments.push({
+            x0: swayX0, y0, z0: swayZ0,
+            x1: swayX1, y1, z1: swayZ1,
+            radius,
+            isLimb: false,
+            snowLoad: 0
+          });
+        }
+
+        // B. 18 Whorled Branch Tiers with Authentic Irregular Tier-to-Tier Spruce Silhouette
+        const WHORL_COUNT = 18;
+        const GOLDEN_ANGLE = 2.39996323; // 137.508 deg
+
+        for (let w = 0; w < WHORL_COUNT; w++) {
+          const wNorm = w / (WHORL_COUNT - 1);
+          const yCurve = Math.pow(wNorm, 0.93);
+          const whorlY = 24 + yCurve * (TREE_HEIGHT - 42) + (rand() - 0.5) * 5.0;
+
+          // Tier-to-tier natural radius modulation creates authentic layered spruce shelves
+          const tierWave = 1.0 + 0.11 * Math.sin(w * 2.35) + (rand() - 0.5) * 0.08;
+          const baseEnvelope = Math.pow(1 - wNorm * 0.92, 0.86) * TREE_BASE_RADIUS * tierWave;
+          const branchCount = Math.max(5, Math.round(9 - wNorm * 4));
+          const whorlPhase = w * GOLDEN_ANGLE + (rand() - 0.5) * 0.28;
+
+          for (let b = 0; b < branchCount; b++) {
+            const frac = b / branchCount;
+            const azimuth = whorlPhase + frac * Math.PI * 2 + (rand() - 0.5) * 0.24;
+            const asymScale = 0.85 + rand() * 0.30;
+            const length = Math.max(18, baseEnvelope * asymScale);
+            const yBase = whorlY + (rand() - 0.5) * 6.0;
+
+            const droop = (14 + (1 - wNorm) * 26) * (0.85 + rand() * 0.3);
+            const tipCurl = (4.2 + (1 - wNorm) * 6.5) * (0.8 + rand() * 0.4);
+            const snowLoad = (8 + (1 - wNorm) * 16) * asymScale;
+
+            const bough = {
+              yBase,
+              azimuth,
+              length,
+              droop,
+              tipCurl,
+              snowLoad,
+              wNorm
+            };
+
+            // Visible dark woody primary limbs extending outward inside the boughs
+            const LIMB_SEGS = 4;
+            for (let ls = 0; ls < LIMB_SEGS; ls++) {
+              const s0 = (ls / LIMB_SEGS) * 0.68;
+              const s1 = ((ls + 1) / LIMB_SEGS) * 0.68;
+              const p0 = evalBoughPoint(bough, s0);
+              const p1 = evalBoughPoint(bough, s1);
+              trunkSegments.push({
+                x0: p0.x, y0: p0.y - 1.2, z0: p0.z,
+                x1: p1.x, y1: p1.y - 1.2, z1: p1.z,
+                radius: lerp(5.2 * (1 - wNorm * 0.55), 1.4, s0),
+                isLimb: true,
+                snowLoad: snowLoad * (s0 * s0)
+              });
+            }
+
+            // Record outer bough tip anchor for hanging 3D metallic baubles
+            const outerTip = evalBoughPoint(bough, 0.95);
+            branchTipAnchors.push({
+              x: outerTip.x,
+              y: outerTip.y,
+              z: outerTip.z,
+              azimuth,
+              wNorm,
+              snowLoad: snowLoad * (0.95 * 0.95)
+            });
+
+            // C. Populate Primary Bough with Feathery Pine Needle Sprays & Upper Snow Tufts
+            const primarySteps = Math.max(6, Math.round(length / 13));
+            for (let ps = 1; ps <= primarySteps; ps++) {
+              const s = ps / primarySteps;
+              const pt = evalBoughPoint(bough, s);
+              const boughWidth = (1 - s * 0.55) * (13 + (1 - wNorm) * 7);
+
+              for (let fan = -1; fan <= 1; fan++) {
+                const perpAngle = azimuth + Math.PI * 0.5;
+                const spread = fan * boughWidth * (0.42 + rand() * 0.25);
+                const dropY = fan === 0 ? -2.2 : -1.0 - Math.abs(fan) * 1.1;
+
+                const nx = pt.x + Math.cos(perpAngle) * spread + (rand() - 0.5) * 3;
+                const nz = pt.z + Math.sin(perpAngle) * spread + (rand() - 0.5) * 3;
+                const ny = pt.y + dropY + (rand() - 0.5) * 2.2;
+
+                const shadeZone = (s < 0.34 || fan === 0)
+                  ? 0
+                  : s < 0.74
+                    ? 1
+                    : 2;
+
+                needleClusters.push({
+                  x: nx,
+                  y: ny,
+                  z: nz,
+                  dirX: Math.cos(azimuth + fan * 0.42),
+                  dirY: -0.25,
+                  dirZ: Math.sin(azimuth + fan * 0.42),
+                  snowLoad: snowLoad * (s * s),
+                  shadeZone,
+                  variant: (ps + fan + 3) % 4,
+                  size: (9.6 - s * 2.5) * (0.88 + rand() * 0.26)
+                });
+              }
+
+              // Upper-surface (+y) pillowy snow tuft resting on top of the main bough
+              if (s >= 0.16 && s <= 0.96) {
+                snowPillows.push({
+                  x: pt.x + (rand() - 0.5) * 2.5,
+                  y: pt.y + 3.4,
+                  z: pt.z + (rand() - 0.5) * 2.5,
+                  snowLoad: snowLoad * (s * s),
+                  size: (9.2 - s * 2.8) * (0.9 + rand() * 0.25),
+                  shadeSeed: rand()
+                });
+              }
+
+              // Warm twinkling fairy light nestled in the pine bough
+              if (s > 0.35 && rand() < 0.24) {
+                fairyLights.push({
+                  x: pt.x + (rand() - 0.5) * boughWidth * 0.9,
+                  y: pt.y - 1.5 + (rand() - 0.5) * 3,
+                  z: pt.z + (rand() - 0.5) * boughWidth * 0.9,
+                  snowLoad: snowLoad * (s * s),
+                  group: rand() < 0.5 ? 0 : 1,
+                  size: 1.8 + rand() * 1.5,
+                  phase: rand() * Math.PI * 2,
+                  speed: 1.6 + rand() * 2.4
+                });
+              }
+            }
+
+            // D. Alternating Left/Right Secondary Side-Twigs along Primary Bough
+            const twigCount = Math.max(2, Math.floor(length / 26));
+            for (let tw = 0; tw < twigCount; tw++) {
+              const sAttach = 0.24 + (tw / Math.max(1, twigCount - 0.4)) * 0.64;
+              const anchor = evalBoughPoint(bough, sAttach);
+              const sideSign = (tw % 2 === 0 ? 1 : -1) * (w % 2 === 0 ? 1 : -1);
+              const twigAzimuth = azimuth + sideSign * (0.68 + rand() * 0.18);
+              const twigLen = length * (1 - sAttach * 0.55) * (0.38 + rand() * 0.14);
+              const twigDroop = droop * 0.32;
+
+              const twigSteps = Math.max(3, Math.round(twigLen / 11));
+              for (let ts = 1; ts <= twigSteps; ts++) {
+                const u = ts / twigSteps;
+                const tr = twigLen * u;
+                const tx = anchor.x + Math.cos(twigAzimuth) * tr;
+                const tz = anchor.z + Math.sin(twigAzimuth) * tr;
+                const ty = anchor.y - twigDroop * Math.pow(u, 1.3) + 1.8 * Math.pow(u, 2.2);
+                const combinedSnowLoad = snowLoad * (sAttach * sAttach) + 3.5 * (u * u);
+
+                for (let side = -1; side <= 1; side += 2) {
+                  const pAng = twigAzimuth + side * Math.PI * 0.48;
+                  const off = 3.2 * (1 - u * 0.4);
+                  needleClusters.push({
+                    x: tx + Math.cos(pAng) * off,
+                    y: ty - 0.8,
+                    z: tz + Math.sin(pAng) * off,
+                    dirX: Math.cos(twigAzimuth + side * 0.35),
+                    dirY: -0.2,
+                    dirZ: Math.sin(twigAzimuth + side * 0.35),
+                    snowLoad: combinedSnowLoad,
+                    shadeZone: u > 0.62 ? 2 : 1,
+                    variant: (ts + side + 2) % 4,
+                    size: (7.8 - u * 2.1) * (0.9 + rand() * 0.2)
+                  });
+                }
+
+                // Upper-surface (+y) pillowy snow tuft on top of secondary twig
+                snowPillows.push({
+                  x: tx,
+                  y: ty + 2.6,
+                  z: tz,
+                  snowLoad: combinedSnowLoad,
+                  size: (7.0 - u * 2.2) * (0.9 + rand() * 0.2),
+                  shadeSeed: rand()
+                });
+
+                if (u > 0.6 && rand() < 0.22) {
+                  fairyLights.push({
+                    x: tx,
+                    y: ty - 1.2,
+                    z: tz,
+                    snowLoad: combinedSnowLoad,
+                    group: rand() < 0.5 ? 0 : 1,
+                    size: 1.6 + rand() * 1.4,
+                    phase: rand() * Math.PI * 2,
+                    speed: 1.6 + rand() * 2.4
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        // E. Top Leader Crown Shoot Sprays (y = TREE_HEIGHT - 16 to TREE_HEIGHT + 8)
+        for (let c = 0; c < 18; c++) {
+          const frac = c / 18;
+          const cy = TREE_HEIGHT - 16 + frac * 22;
+          const ca = c * GOLDEN_ANGLE;
+          const cr = (1 - frac) * 14 + 2;
+          needleClusters.push({
+            x: Math.cos(ca) * cr,
+            y: cy,
+            z: Math.sin(ca) * cr,
+            dirX: Math.cos(ca),
+            dirY: 0.45,
+            dirZ: Math.sin(ca),
+            snowLoad: 1.5 * (1 - frac),
+            shadeZone: 2,
+            variant: c % 4,
+            size: 7.4 - frac * 2.4
+          });
+          if (frac < 0.75) {
+            snowPillows.push({
+              x: Math.cos(ca) * (cr * 0.8),
+              y: cy + 2.2,
+              z: Math.sin(ca) * (cr * 0.8),
+              snowLoad: 1.5 * (1 - frac),
+              size: 5.8 * (1 - frac * 0.4),
+              shadeSeed: rand()
+            });
+          }
+        }
+      }
+
+      /**
+       * 2. Build Airy 3.5-Turn Micro-LED Spiral Light Strip ("轻盈细腻的螺旋灯条")
+       *    3.5 graceful diagonal sweeps (t = 0.07 to 0.88) along the outer branch
+       *    envelope with subtle harmonic undulation—depth-sorted alongside the
+       *    pine boughs so front branches naturally veil rear coils.
+       */
+      function initSpiralRibbons() {
+        ribbonNodes.length = 0;
+        ribbonPulsePhase = 0;
+
+        const NODE_COUNT = 320;
+        const TURNS = 3.5;
+
+        for (let i = 0; i <= NODE_COUNT; i++) {
+          const t = i / NODE_COUNT;
+          const heightFrac = lerp(0.07, 0.88, t);
+          const baseY = 24 + heightFrac * (TREE_HEIGHT - 38);
+          const theta = t * TURNS * Math.PI * 2 + 0.45;
+
+          const envelopeR = Math.pow(1 - heightFrac * 0.92, 0.86) * TREE_BASE_RADIUS * 0.945;
+          const harmonicWave = Math.sin(theta * 3.0 + 0.6);
+          const radialR = envelopeR + harmonicWave * (4.0 * (1 - heightFrac * 0.6));
+          const drapeY = baseY + Math.cos(theta * 3.0 + 0.6) * (2.6 * (1 - heightFrac * 0.5));
+          const snowLoad = (8 + (1 - heightFrac) * 14) * 0.86;
+
+          ribbonNodes.push({
+            x: Math.cos(theta) * radialR,
+            y: drapeY,
+            z: Math.sin(theta) * radialR,
+            snowLoad,
+            t,
+            isBulb: i % 6 === 0,
+            bulbPhase: i * 0.55
+          });
+        }
+      }
+
+      /**
+       * 3. Build Hanging 3D Metallic Baubles (Suspended from Outer Bough Tips)
+       *    & 10 3D Perspective Gift Boxes Around the Tree Base
+       */
+      function initOrnamentsAndGifts() {
+        baubles.length = 0;
+        giftBoxes.length = 0;
+
+        // 26 reflective metallic baubles suspended on fine strings beneath outer bough tips
+        const BAUBLE_COUNT = 26;
+        const step = Math.max(1, Math.floor(branchTipAnchors.length / BAUBLE_COUNT));
+        for (let i = 0; i < BAUBLE_COUNT; i++) {
+          const anc = branchTipAnchors[(i * step + 3) % branchTipAnchors.length];
+          if (!anc) continue;
+          const hangDist = 7.5 + (i % 3) * 2.2;
+          baubles.push({
+            x: anc.x * 0.92,
+            y: anc.y - hangDist,
+            z: anc.z * 0.92,
+            stringTopY: anc.y - 1.0,
+            snowLoad: anc.snowLoad,
+            radius: (5.6 - anc.wNorm * 1.6) + (i % 2) * 0.7,
+            colorIdx: i % 4,
+            shimmerPhase: i * 0.9
+          });
+        }
+
+        // 10 3D perspective gift boxes: 7 arranged on the ground around the base + 3 on lower boughs
+        const specs = [
+          { x:  64, y:  2, z:  80, size: [27, 21, 27], yaw: 0.42,  palette: 0, snowLoad: 0 },
+          { x: -76, y:  2, z:  66, size: [25, 20, 25], yaw: -0.35, palette: 1, snowLoad: 0 },
+          { x:  90, y:  2, z: -50, size: [24, 19, 24], yaw: 0.25,  palette: 2, snowLoad: 0 },
+          { x: -60, y:  2, z: -86, size: [26, 20, 26], yaw: 0.55,  palette: 0, snowLoad: 0 },
+          { x:  14, y:  2, z: 106, size: [21, 16, 21], yaw: -0.22, palette: 2, snowLoad: 0 },
+          { x: -104,y:  2, z: -12, size: [22, 18, 22], yaw: 0.38,  palette: 1, snowLoad: 0 },
+          { x:  34, y:  2, z: -100,size: [20, 16, 20], yaw: -0.45, palette: 0, snowLoad: 0 },
+          { x:  92, y: 34, z:  46, size: [18, 15, 18], yaw: 0.32,  palette: 1, snowLoad: 9 },
+          { x: -86, y: 42, z:  44, size: [17, 14, 17], yaw: -0.4,  palette: 2, snowLoad: 9 },
+          { x:  18, y: 54, z: -88, size: [16, 13, 16], yaw: 0.2,   palette: 0, snowLoad: 8 }
+        ];
+
+        specs.forEach((s) => {
+          giftBoxes.push({
+            x: s.x,
+            y: s.y,
+            z: s.z,
+            w: s.size[0],
+            h: s.size[1],
+            d: s.size[2],
+            yaw: s.yaw,
+            paletteIdx: s.palette,
+            snowLoad: s.snowLoad
+          });
+        });
+      }
+
+      /**
+       * 4. Build Ground Constellation Rings & Swirling Galaxy Stardust Vortex
+       */
+      function initGroundGalaxy() {
+        groundRings.length = 0;
+        vortexParticles.length = 0;
+
+        const radii = [196, 234, 274];
+        const counts = [150, 180, 210];
+
+        radii.forEach((radius, ringIdx) => {
+          const dots = [];
+          const count = counts[ringIdx];
+          for (let i = 0; i < count; i++) {
+            const a = (i / count) * Math.PI * 2;
+            const gapMask = Math.sin(a * (4 + ringIdx) + ringIdx) > -0.65;
+            if (!gapMask && i % 2 === 0) continue;
+            dots.push({
+              angle: a,
+              radius: radius + (Math.random() - 0.5) * 3.5,
+              size: 0.9 + Math.random() * 1.35,
+              alpha: 0.25 + Math.random() * 0.55
+            });
+          }
+          groundRings.push({
+            dots,
+            speed: (ringIdx % 2 === 0 ? 1 : -1) * (0.08 + ringIdx * 0.03)
+          });
+        });
+
+        for (let i = 0; i < 240; i++) {
+          const isFirefly = i < 42;
+          const arm = i % 3;
+          const distFrac = Math.pow(Math.random(), 0.72);
+          const radius = isFirefly
+            ? 45 + Math.random() * 210
+            : 36 + distFrac * 245;
+          const baseAngle = (arm * Math.PI * 2) / 3 + distFrac * 3.2 + (Math.random() - 0.5) * 0.65;
+
+          vortexParticles.push({
+            angle: baseAngle,
+            radius,
+            yBase: isFirefly ? 12 + Math.random() * 195 : -6 + (Math.random() - 0.5) * 4,
+            isFirefly,
+            speed: isFirefly ? 0.14 + Math.random() * 0.18 : 0.12 + (1 - distFrac) * 0.18,
+            bobPhase: Math.random() * Math.PI * 2,
+            bobAmp: isFirefly ? 8 + Math.random() * 14 : 1.2,
+            size: isFirefly ? 1.5 + Math.random() * 1.8 : 0.9 + Math.random() * 1.4,
+            alpha: isFirefly ? 0.45 + Math.random() * 0.45 : 0.22 + (1 - distFrac) * 0.45
+          });
+        }
+      }
+
+      /**
+       * 5. Build Distant Parallax Stars & Multi-Layered Falling Snow
+       */
+      function initSkyAndSnow() {
+        bgStars.length = 0;
+        snowflakes.length = 0;
+
+        for (let i = 0; i < 145; i++) {
+          const isBokeh = i < 24;
+          bgStars.push({
+            nx: Math.random(),
+            ny: Math.random(),
+            radius: isBokeh ? 4 + Math.random() * 11 : 0.6 + Math.random() * 1.4,
+            isBokeh,
+            alpha: isBokeh ? 0.04 + Math.random() * 0.07 : 0.22 + Math.random() * 0.68,
+            phase: Math.random() * Math.PI * 2,
+            speed: 0.6 + Math.random() * 1.8,
+            parallax: isBokeh ? 20 : 6
+          });
+        }
+
+        const SNOW_COUNT = 260;
+        for (let i = 0; i < SNOW_COUNT; i++) {
+          const layer = i < 50 ? 'fg' : i < 165 ? 'mid' : 'bg';
+          snowflakes.push({
+            x: Math.random() * 1.2 - 0.1,
+            y: Math.random() * 1.2 - 0.1,
+            layer,
+            radius: layer === 'fg'
+              ? 3.2 + Math.random() * 3.5
+              : layer === 'mid'
+                ? 1.6 + Math.random() * 2.1
+                : 0.9 + Math.random() * 1.2,
+            speedY: layer === 'fg'
+              ? 0.00085 + Math.random() * 0.00065
+              : layer === 'mid'
+                ? 0.00048 + Math.random() * 0.0004
+                : 0.00025 + Math.random() * 0.00022,
+            swayAmp: layer === 'fg' ? 0.00055 : 0.0003,
+            swayFreq: 0.7 + Math.random() * 1.2,
+            phase: Math.random() * Math.PI * 2,
+            spin: (Math.random() - 0.5) * 1.5,
+            isCrystal: layer !== 'bg' && Math.random() < 0.44,
+            alpha: layer === 'fg'
+              ? 0.45 + Math.random() * 0.4
+              : layer === 'mid'
+                ? 0.35 + Math.random() * 0.45
+                : 0.2 + Math.random() * 0.3
+          });
+        }
+      }
+
+      // ========================================================================
+      // 3D Projection Math
+      // ========================================================================
+      function getStageMetrics() {
+        const topReserve = Math.max(70, height * 0.11);
+        const bottomReserve = Math.max(166, height * 0.235);
+        const availableH = Math.max(240, height - topReserve - bottomReserve);
+
+        const baseScaleY = availableH / (TREE_HEIGHT + 78);
+        const baseScaleX = (width * 0.86) / (TREE_BASE_RADIUS * 2.38);
+        const stageScale = Math.min(baseScaleY, baseScaleX, 1.42) * camera.zoom;
+
+        const centerX = width * 0.5;
+        const baseScreenY = topReserve + availableH * 0.89;
+
+        return { centerX, baseScreenY, stageScale };
+      }
+
+      function project3D(x, y, z, cosY, sinY, cosX, sinX, metrics) {
+        const rx = x * cosY - z * sinY;
+        const rz = x * sinY + z * cosY;
+
+        const py = y - TREE_HEIGHT * 0.45;
+        const ry = py * cosX - rz * sinX + TREE_HEIGHT * 0.45;
+        const finalZ = py * sinX + rz * cosX;
+
+        const perspective = CAMERA_FOV / (CAMERA_FOV + finalZ + CAMERA_DIST * 0.28);
+        const sx = metrics.centerX + rx * perspective * metrics.stageScale;
+        const sy = metrics.baseScreenY - ry * perspective * metrics.stageScale;
+
+        return {
+          sx,
+          sy,
+          z: finalZ,
+          scale: perspective * metrics.stageScale
+        };
+      }
+
+      // ========================================================================
+      // Aurora Borealis Curtains Renderer (极光流光)
+      // ========================================================================
+      function drawAuroraCurtains(time) {
+        if (visual.auroraStrength <= 0.02) return;
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        const alphaBase = visual.auroraStrength * 0.22;
+        const horizonY = height * 0.46;
+
+        const curtains = [
+          { yOff: 0.16, amp: 28, freq: 0.0042, speed: 0.75, c1: 'rgba(64, 244, 186,', c2: 'rgba(132, 86, 232,' },
+          { yOff: 0.23, amp: 34, freq: 0.0034, speed: -0.58, c1: 'rgba(82, 224, 214,', c2: 'rgba(176, 92, 236,' },
+          { yOff: 0.11, amp: 22, freq: 0.0051, speed: 0.92, c1: 'rgba(116, 252, 196,', c2: 'rgba(72, 168, 236,' }
+        ];
+
+        curtains.forEach((cur, idx) => {
+          const step = Math.max(14, Math.floor(width / 36));
+          for (let x = -step; x <= width + step; x += step) {
+            const wave =
+              Math.sin(x * cur.freq + time * cur.speed + idx * 1.7) * cur.amp +
+              Math.cos(x * cur.freq * 1.9 - time * cur.speed * 0.7) * (cur.amp * 0.45);
+            const topY = height * cur.yOff + wave - 55;
+            const botY = Math.min(horizonY, topY + 135 + Math.sin(x * 0.01 + time) * 28);
+            const shimmer = 0.55 + 0.45 * Math.sin(x * 0.018 + time * 1.8 + idx);
+            const a = alphaBase * shimmer;
+
+            const grad = ctx.createLinearGradient(x, topY, x + 16, botY);
+            grad.addColorStop(0, `${cur.c2} 0)`);
+            grad.addColorStop(0.35, `${cur.c1} ${a.toFixed(3)})`);
+            grad.addColorStop(0.75, `${cur.c2} ${(a * 0.65).toFixed(3)})`);
+            grad.addColorStop(1, `${cur.c1} 0)`);
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(x, topY, step + 2, botY - topY);
+          }
+        });
+
+        ctx.restore();
+      }
+
+      // ========================================================================
+      // 3D Grounded Root Mound & Bark Trunk / Woody Limb Segment Renderer
+      // ========================================================================
+      function drawGroundMound(cosY, sinY, cosX, sinX, metrics) {
+        const baseCenter = project3D(0, -8, 0, cosY, sinY, cosX, sinX, metrics);
+        const moundRx = 68 * baseCenter.scale;
+        const moundRy = moundRx * 0.34;
+
+        ctx.save();
+        ctx.translate(baseCenter.sx, baseCenter.sy);
+        ctx.scale(1, moundRy / Math.max(1, moundRx));
+        const moundGrad = ctx.createRadialGradient(0, 0, moundRx * 0.12, 0, 0, moundRx);
+        const moundCol = visual.snowWeight > 0.45
+          ? visual.snowBlanketColor
+          : visual.barkLight;
+        moundGrad.addColorStop(0, rgb(visual.barkDark, 0.92));
+        moundGrad.addColorStop(0.32, rgb(moundCol, 0.55));
+        moundGrad.addColorStop(0.75, rgb(moundCol, 0.2));
+        moundGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = moundGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, moundRx, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawTrunkSegmentItem(item) {
+        const { seg, p0, p1 } = item;
+        const depthShade = p0.z < 0 ? 1.0 : Math.max(0.45, 1 - p0.z / 240);
+        const w = Math.max(1.2, seg.radius * 2 * p0.scale);
+
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1;
+        ctx.lineCap = 'round';
+
+        ctx.strokeStyle = rgb([
+          visual.barkDark[0] * depthShade,
+          visual.barkDark[1] * depthShade,
+          visual.barkDark[2] * depthShade
+        ], 0.96);
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        ctx.moveTo(p0.sx, p0.sy);
+        ctx.lineTo(p1.sx, p1.sy);
+        ctx.stroke();
+
+        if (!seg.isLimb && w > 2.4) {
+          ctx.strokeStyle = rgb([
+            visual.barkLight[0] * depthShade,
+            visual.barkLight[1] * depthShade,
+            visual.barkLight[2] * depthShade
+          ], 0.68);
+          ctx.lineWidth = w * 0.34;
+          ctx.beginPath();
+          ctx.moveTo(p0.sx - w * 0.2, p0.sy);
+          ctx.lineTo(p1.sx - w * 0.2, p1.sy);
+          ctx.stroke();
+        }
+      }
+
+      // ========================================================================
+      // 3D Reflective Metallic Bauble (Suspended on String from Branch Tip)
+      // ========================================================================
+      function drawBaubleItem(item, time) {
+        const { bauble, proj, topProj } = item;
+        const r = Math.max(2.6, bauble.radius * proj.scale);
+        const col = visual.baubles[bauble.colorIdx];
+        const depthDim = proj.z < 0 ? 1.0 : Math.max(0.5, 1 - proj.z / 280);
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1;
+
+        ctx.strokeStyle = `rgba(235, 222, 198, ${(0.55 * depthDim).toFixed(2)})`;
+        ctx.lineWidth = Math.max(0.7, 0.9 * proj.scale);
+        ctx.beginPath();
+        ctx.moveTo(topProj.sx, topProj.sy);
+        ctx.lineTo(proj.sx, proj.sy - r);
+        ctx.stroke();
+
+        ctx.translate(proj.sx, proj.sy);
+
+        ctx.fillStyle = `rgba(235, 212, 168, ${(0.88 * depthDim).toFixed(2)})`;
+        ctx.fillRect(-r * 0.22, -r * 1.15, r * 0.44, r * 0.24);
+
+        const grad = ctx.createRadialGradient(-r * 0.32, -r * 0.34, r * 0.08, 0, 0, r);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.24, rgb([
+          Math.min(255, col[0] + 34) * depthDim,
+          Math.min(255, col[1] + 34) * depthDim,
+          Math.min(255, col[2] + 34) * depthDim
+        ], 0.98));
+        grad.addColorStop(0.75, rgb([
+          col[0] * 0.78 * depthDim,
+          col[1] * 0.78 * depthDim,
+          col[2] * 0.78 * depthDim
+        ], 0.98));
+        grad.addColorStop(1, rgb([
+          col[0] * 0.36 * depthDim,
+          col[1] * 0.36 * depthDim,
+          col[2] * 0.36 * depthDim
+        ], 0.98));
+
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        if (proj.z < 20) {
+          const glint = 0.65 + 0.35 * Math.sin(time * 2.4 + bauble.shimmerPhase);
+          ctx.fillStyle = `rgba(255, 255, 255, ${(0.78 * glint).toFixed(2)})`;
+          ctx.beginPath();
+          ctx.arc(-r * 0.34, -r * 0.34, r * 0.18, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      // ========================================================================
+      // 3D Gift Box Renderer (True Perspective Faces + Satin Cross-Ribbons + Bow)
+      // ========================================================================
+      function drawGiftBoxItem(item) {
+        const { box, corners, topCenter, bowLeft, bowRight } = item;
+        const c = corners;
+
+        const pal = visual.gifts[box.paletteIdx];
+        const baseFill = rgb(pal.box, 0.97);
+        const shadeFill = rgb(pal.shade, 0.97);
+        const topFill = rgb([
+          Math.min(255, pal.box[0] + 20),
+          Math.min(255, pal.box[1] + 20),
+          Math.min(255, pal.box[2] + 20)
+        ], 0.99);
+        const ribbonFill = rgb(pal.ribbon, 0.96);
+
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1;
+
+        const faces = [
+          { idx: [4, 7, 6, 5], fill: topFill,   isTop: true  },
+          { idx: [3, 2, 6, 7], fill: baseFill,  isTop: false },
+          { idx: [2, 1, 5, 6], fill: shadeFill, isTop: false },
+          { idx: [1, 0, 4, 5], fill: shadeFill, isTop: false },
+          { idx: [0, 3, 7, 4], fill: baseFill,  isTop: false },
+          { idx: [0, 1, 2, 3], fill: shadeFill, isTop: false }
+        ];
+
+        faces.forEach((f) => {
+          const p0 = c[f.idx[0]];
+          const p1 = c[f.idx[1]];
+          const p2 = c[f.idx[2]];
+          const p3 = c[f.idx[3]];
+
+          const cross = (p1.sx - p0.sx) * (p2.sy - p0.sy) - (p1.sy - p0.sy) * (p2.sx - p0.sx);
+          if (cross >= 0) return;
+
+          ctx.beginPath();
+          ctx.moveTo(p0.sx, p0.sy);
+          ctx.lineTo(p1.sx, p1.sy);
+          ctx.lineTo(p2.sx, p2.sy);
+          ctx.lineTo(p3.sx, p3.sy);
+          ctx.closePath();
+          ctx.fillStyle = f.fill;
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+
+          ctx.strokeStyle = ribbonFill;
+          const ribbonW = Math.max(1.8, (p0.scale * box.w) * 0.16);
+          ctx.lineWidth = ribbonW;
+          ctx.lineCap = 'butt';
+
+          ctx.beginPath();
+          ctx.moveTo((p0.sx + p1.sx) * 0.5, (p0.sy + p1.sy) * 0.5);
+          ctx.lineTo((p3.sx + p2.sx) * 0.5, (p3.sy + p2.sy) * 0.5);
+          ctx.stroke();
+
+          if (f.isTop) {
+            ctx.beginPath();
+            ctx.moveTo((p1.sx + p2.sx) * 0.5, (p1.sy + p2.sy) * 0.5);
+            ctx.lineTo((p0.sx + p3.sx) * 0.5, (p0.sy + p3.sy) * 0.5);
+            ctx.stroke();
+          }
+        });
+
+        const rBow = Math.max(2.3, topCenter.scale * 3.9);
+        ctx.strokeStyle = ribbonFill;
+        ctx.lineWidth = Math.max(1.5, rBow * 0.48);
+        ctx.beginPath();
+        ctx.ellipse((topCenter.sx + bowLeft.sx) * 0.5, (topCenter.sy + bowLeft.sy) * 0.5, rBow, rBow * 0.55, -0.35, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.ellipse((topCenter.sx + bowRight.sx) * 0.5, (topCenter.sy + bowRight.sy) * 0.5, rBow, rBow * 0.55, 0.35, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // ========================================================================
+      // Crowning 3D Faceted Star with Rotating Volumetric God Rays
+      // ========================================================================
+      function drawApexStar(time, cosY, sinY, cosX, sinX, metrics) {
+        const apex = project3D(0, TREE_HEIGHT + 13, 0, cosY, sinY, cosX, sinX, metrics);
+        const pulse = 0.88 + 0.12 * Math.sin(time * 2.6);
+        const outerR = Math.max(14, 19.5 * apex.scale);
+        const innerR = outerR * 0.42;
+
+        ctx.save();
+        ctx.translate(apex.sx, apex.sy);
+
+        // 1. Rotating Volumetric God Rays
+        ctx.globalCompositeOperation = 'lighter';
+        const rayCount = 8;
+        const rayLen = outerR * 4.5;
+        for (let i = 0; i < rayCount; i++) {
+          const a = time * 0.28 + (i * Math.PI * 2) / rayCount;
+          const rayAlpha = (0.065 + 0.045 * Math.sin(time * 2.1 + i * 1.9)) * pulse;
+          ctx.save();
+          ctx.rotate(a);
+          const rGrad = ctx.createLinearGradient(0, 0, rayLen, 0);
+          rGrad.addColorStop(0, rgb(visual.starCore, rayAlpha * 1.8));
+          rGrad.addColorStop(0.45, rgb(visual.starGlow, rayAlpha));
+          rGrad.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = rGrad;
+          ctx.beginPath();
+          ctx.moveTo(0, -outerR * 0.18);
+          ctx.lineTo(rayLen, -outerR * 0.95);
+          ctx.lineTo(rayLen, outerR * 0.95);
+          ctx.lineTo(0, outerR * 0.18);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // 2. Soft Atmospheric Radial Halo
+        const haloR = outerR * (3.6 + 0.35 * Math.sin(time * 2.1));
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, haloR);
+        grad.addColorStop(0, rgb(visual.starCore, 0.62 * pulse));
+        grad.addColorStop(0.35, rgb(visual.starGlow, 0.26 * pulse));
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, 0, haloR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. Anamorphic Lens-Flare Cross Beams
+        ctx.strokeStyle = rgb(visual.starCore, 0.34 * pulse);
+        ctx.lineWidth = 1.2;
+        const flareLen = outerR * 3.1;
+        ctx.beginPath();
+        ctx.moveTo(-flareLen, 0);
+        ctx.lineTo(flareLen, 0);
+        ctx.moveTo(0, -flareLen * 0.85);
+        ctx.lineTo(0, flareLen * 0.85);
+        ctx.stroke();
+
+        // 4. Crisp 5-Pointed Faceted Star Silhouette
+        ctx.globalCompositeOperation = 'source-over';
+        const starGrad = ctx.createLinearGradient(-outerR, -outerR, outerR, outerR);
+        starGrad.addColorStop(0, '#ffffff');
+        starGrad.addColorStop(0.5, rgb(visual.starCore, 1));
+        starGrad.addColorStop(1, rgb(visual.starGlow, 0.96));
+
+        ctx.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const r = i % 2 === 0 ? outerR : innerR;
+          const a = -Math.PI / 2 + (i * Math.PI) / 5;
+          const px = Math.cos(a) * r;
+          const py = Math.sin(a) * r;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = starGrad;
+        ctx.shadowColor = rgb(visual.starGlow, 0.9);
+        ctx.shadowBlur = 18;
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 0.75;
+        for (let i = 0; i < 5; i++) {
+          const a = -Math.PI / 2 + (i * Math.PI * 2) / 5;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(Math.cos(a) * outerR * 0.92, Math.sin(a) * outerR * 0.92);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+
+      // ========================================================================
+      // Shooting Stars (流星) & Interactive Rising Wish Fireworks (星愿烟花)
+      // ========================================================================
+      function spawnShootingStar() {
+        const startX = (0.12 + Math.random() * 0.76) * width;
+        const startY = (0.05 + Math.random() * 0.24) * height;
+        const dir = Math.random() < 0.5 ? 1 : -1;
+        const speed = 7.5 + Math.random() * 5.5;
+        const angle = dir > 0 ? 0.38 + Math.random() * 0.22 : Math.PI - (0.38 + Math.random() * 0.22);
+
+        shootingStars.push({
+          x: startX,
+          y: startY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1.0,
+          decay: 0.016 + Math.random() * 0.008,
+          length: 85 + Math.random() * 65
+        });
+      }
+
+      function updateAndDrawShootingStars() {
+        if (shootingStars.length === 0) return;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.lineCap = 'round';
+
+        for (let i = shootingStars.length - 1; i >= 0; i--) {
+          const s = shootingStars[i];
+          s.x += s.vx;
+          s.y += s.vy;
+          s.life -= s.decay;
+
+          if (s.life <= 0) {
+            shootingStars.splice(i, 1);
+            continue;
+          }
+
+          const mag = Math.hypot(s.vx, s.vy) || 1;
+          const tx = s.x - (s.vx / mag) * s.length * s.life;
+          const ty = s.y - (s.vy / mag) * s.length * s.life;
+
+          const grad = ctx.createLinearGradient(s.x, s.y, tx, ty);
+          grad.addColorStop(0, `rgba(255, 255, 255, ${s.life.toFixed(3)})`);
+          grad.addColorStop(0.3, rgb(visual.starGlow, s.life * 0.65));
+          grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 2.2 * s.life;
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y);
+          ctx.lineTo(tx, ty);
+          ctx.stroke();
+
+          const headSpr = getGlowSprite(visual.starCore[0], visual.starCore[1], visual.starCore[2], 0.36);
+          const hr = 7.5 * s.life;
+          ctx.globalAlpha = s.life;
+          ctx.drawImage(headSpr, s.x - hr, s.y - hr, hr * 2, hr * 2);
+        }
+
+        ctx.restore();
+      }
+
+      function spawnWishFirework(targetX, targetY, withRocket = false) {
+        if (withRocket) {
+          const startX = targetX + (Math.random() - 0.5) * 40;
+          wishFireworks.push({
+            type: 'rocket',
+            x: startX,
+            y: height * 0.92,
+            targetY,
+            vy: -11.5,
+            vx: (targetX - startX) * 0.03,
+            life: 1.0
+          });
+          return;
+        }
+
+        const sparkCount = 46;
+        for (let i = 0; i < sparkCount; i++) {
+          const angle = (i / sparkCount) * Math.PI * 2 + Math.random() * 0.25;
+          const ringTier = i % 2 === 0 ? 1.0 : 0.58;
+          const speed = (1.5 + Math.random() * 3.8) * ringTier;
+          wishFireworks.push({
+            type: 'spark',
+            x: targetX,
+            y: targetY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 1.2,
+            swirl: (Math.random() - 0.5) * 0.08,
+            life: 1.0,
+            decay: 0.013 + Math.random() * 0.011,
+            size: 3.4 + Math.random() * 3.8,
+            isGold: i % 2 === 0
+          });
+        }
+      }
+
+      function updateAndDrawWishFireworks() {
+        if (wishFireworks.length === 0) return;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+
+        const goldSpr = getGlowSprite(visual.starCore[0], visual.starCore[1], visual.starCore[2], 0.35);
+        const glowSpr = getGlowSprite(visual.ribbonGlow[0], visual.ribbonGlow[1], visual.ribbonGlow[2], 0.32);
+
+        for (let i = wishFireworks.length - 1; i >= 0; i--) {
+          const p = wishFireworks[i];
+
+          if (p.type === 'rocket') {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy *= 0.975;
+            const r = 7;
+            ctx.globalAlpha = 0.95;
+            ctx.drawImage(goldSpr, p.x - r, p.y - r, r * 2, r * 2);
+
+            if (p.y <= p.targetY || p.vy > -2.2) {
+              const bx = p.x;
+              const by = p.y;
+              wishFireworks.splice(i, 1);
+              spawnWishFirework(bx, by, false);
+            }
+            continue;
+          }
+
+          p.life -= p.decay;
+          if (p.life <= 0) {
+            wishFireworks.splice(i, 1);
+            continue;
+          }
+
+          const nx = p.vx * Math.cos(p.swirl) - p.vy * Math.sin(p.swirl);
+          const ny = p.vx * Math.sin(p.swirl) + p.vy * Math.cos(p.swirl);
+          p.vx = nx * 0.982;
+          p.vy = ny * 0.982 + 0.025;
+          p.x += p.vx;
+          p.y += p.vy;
+
+          const r = p.size * p.life * 1.6;
+          ctx.globalAlpha = p.life * 0.92;
+          ctx.drawImage(p.isGold ? goldSpr : glowSpr, p.x - r, p.y - r, r * 2, r * 2);
+        }
+
+        ctx.restore();
+      }
+
+      // ========================================================================
+      // Snowfall Renderer (Crystals + Soft Bokeh Snow)
+      // ========================================================================
+      function drawSnowflakeCrystal(x, y, radius, angle, colorStr) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.strokeStyle = colorStr;
+        ctx.lineWidth = Math.max(0.8, radius * 0.22);
+        ctx.lineCap = 'round';
+
+        for (let i = 0; i < 3; i++) {
+          ctx.rotate(Math.PI / 3);
+          ctx.beginPath();
+          ctx.moveTo(-radius, 0);
+          ctx.lineTo(radius, 0);
+          ctx.stroke();
+
+          const b = radius * 0.45;
+          ctx.beginPath();
+          ctx.moveTo(radius * 0.52, 0);
+          ctx.lineTo(radius * 0.52 + b * 0.6, -b * 0.6);
+          ctx.moveTo(radius * 0.52, 0);
+          ctx.lineTo(radius * 0.52 + b * 0.6, b * 0.6);
+          ctx.moveTo(-radius * 0.52, 0);
+          ctx.lineTo(-radius * 0.52 - b * 0.6, -b * 0.6);
+          ctx.moveTo(-radius * 0.52, 0);
+          ctx.lineTo(-radius * 0.52 - b * 0.6, b * 0.6);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function updateAndDrawSnow(time, targetLayer) {
+        const effectiveDensity = snowEnabled ? visual.snowDensity : 0;
+        if (effectiveDensity <= 0.01) return;
+
+        const maxIndex = Math.floor(snowflakes.length * effectiveDensity);
+        for (let i = 0; i < maxIndex; i++) {
+          const s = snowflakes[i];
+          if (s.layer !== targetLayer) continue;
+
+          s.y += s.speedY * (0.75 + 0.45 * effectiveDensity);
+          s.x += Math.sin(time * s.swayFreq + s.phase) * s.swayAmp;
+
+          if (s.y > 1.08) {
+            s.y = -0.06;
+            s.x = Math.random();
+          }
+          if (s.x > 1.08) s.x = -0.06;
+          if (s.x < -0.08) s.x = 1.06;
+
+          const sx = s.x * width;
+          const sy = s.y * height;
+          const alpha = s.alpha * Math.min(1, effectiveDensity * 1.35);
+          const colStr = rgb(visual.snowTint, alpha);
+
+          if (s.isCrystal) {
+            drawSnowflakeCrystal(sx, sy, s.radius * 1.35, time * s.spin + s.phase, colStr);
+          } else {
+            ctx.fillStyle = colStr;
+            ctx.beginPath();
+            ctx.arc(sx, sy, s.radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
+      // ========================================================================
+      // Built-in Zero-Dependency Web Audio API Crystal Music Box
+      // ========================================================================
+      const MusicBox = (function () {
+        let audioCtx = null;
+        let isPlaying = false;
+        let timerId = null;
+        let noteIndex = 0;
+
+        const MELODY = [
+          { f: 392.00, bass: 196.00, d: 0.42 },
+          { f: 523.25, bass: 261.63, d: 0.42 },
+          { f: 523.25, bass: null,   d: 0.21 },
+          { f: 587.33, bass: null,   d: 0.21 },
+          { f: 523.25, bass: null,   d: 0.21 },
+          { f: 493.88, bass: null,   d: 0.21 },
+          { f: 440.00, bass: 220.00, d: 0.42 },
+          { f: 440.00, bass: null,   d: 0.42 },
+
+          { f: 440.00, bass: 174.61, d: 0.42 },
+          { f: 587.33, bass: 293.66, d: 0.42 },
+          { f: 587.33, bass: null,   d: 0.21 },
+          { f: 659.25, bass: null,   d: 0.21 },
+          { f: 587.33, bass: null,   d: 0.21 },
+          { f: 523.25, bass: null,   d: 0.21 },
+          { f: 493.88, bass: 196.00, d: 0.42 },
+          { f: 392.00, bass: null,   d: 0.42 },
+
+          { f: 392.00, bass: 164.81, d: 0.42 },
+          { f: 659.25, bass: 261.63, d: 0.42 },
+          { f: 659.25, bass: null,   d: 0.21 },
+          { f: 698.46, bass: null,   d: 0.21 },
+          { f: 659.25, bass: null,   d: 0.21 },
+          { f: 587.33, bass: null,   d: 0.21 },
+          { f: 523.25, bass: 220.00, d: 0.42 },
+          { f: 440.00, bass: null,   d: 0.42 },
+
+          { f: 392.00, bass: 174.61, d: 0.21 },
+          { f: 392.00, bass: null,   d: 0.21 },
+          { f: 440.00, bass: 196.00, d: 0.42 },
+          { f: 587.33, bass: null,   d: 0.42 },
+          { f: 493.88, bass: 246.94, d: 0.42 },
+          { f: 523.25, bass: 261.63, d: 0.95 },
+
+          { f: 587.33, bass: 196.00, d: 0.62 },
+          { f: 659.25, bass: null,   d: 0.22 },
+          { f: 587.33, bass: null,   d: 0.42 },
+          { f: 493.88, bass: 246.94, d: 0.95 },
+
+          { f: 587.33, bass: 196.00, d: 0.62 },
+          { f: 659.25, bass: null,   d: 0.22 },
+          { f: 587.33, bass: null,   d: 0.42 },
+          { f: 493.88, bass: 246.94, d: 0.95 },
+
+          { f: 880.00, bass: 293.66, d: 0.62 },
+          { f: 880.00, bass: null,   d: 0.38 },
+          { f: 739.99, bass: 293.66, d: 0.95 },
+
+          { f: 783.99, bass: 196.00, d: 0.62 },
+          { f: 783.99, bass: null,   d: 0.38 },
+          { f: 587.33, bass: 246.94, d: 1.05 }
+        ];
+
+        function ensureContext() {
+          if (!audioCtx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+              audioCtx = new AudioContextClass();
+            }
+          }
+          if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+        }
+
+        function playPluck(freq, volume = 0.08, decay = 1.6) {
+          ensureContext();
+          if (!audioCtx || !freq) return;
+
+          const now = audioCtx.currentTime;
+
+          const osc1 = audioCtx.createOscillator();
+          const gain1 = audioCtx.createGain();
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(freq, now);
+
+          gain1.gain.setValueAtTime(0.0001, now);
+          gain1.gain.linearRampToValueAtTime(volume, now + 0.012);
+          gain1.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+
+          osc1.connect(gain1);
+          gain1.connect(audioCtx.destination);
+          osc1.start(now);
+          osc1.stop(now + decay + 0.05);
+
+          const osc2 = audioCtx.createOscillator();
+          const gain2 = audioCtx.createGain();
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(freq * 2, now);
+
+          gain2.gain.setValueAtTime(0.0001, now);
+          gain2.gain.linearRampToValueAtTime(volume * 0.22, now + 0.006);
+          gain2.gain.exponentialRampToValueAtTime(0.0001, now + decay * 0.42);
+
+          osc2.connect(gain2);
+          gain2.connect(audioCtx.destination);
+          osc2.start(now);
+          osc2.stop(now + decay * 0.45);
+        }
+
+        function scheduleNext() {
+          if (!isPlaying) return;
+          const step = MELODY[noteIndex % MELODY.length];
+          playPluck(step.f, 0.072, 1.75);
+          if (step.bass) {
+            playPluck(step.bass, 0.038, 2.2);
+          }
+          noteIndex++;
+          timerId = setTimeout(scheduleNext, step.d * 1000);
+        }
+
+        function toggle() {
+          isPlaying = !isPlaying;
+          if (isPlaying) {
+            ensureContext();
+            scheduleNext();
+          } else if (timerId) {
+            clearTimeout(timerId);
+            timerId = null;
+          }
+          return isPlaying;
+        }
+
+        function chimeWish() {
+          if (!isPlaying) return;
+          const notes = [783.99, 987.77, 1174.66, 1567.98];
+          notes.forEach((f, idx) => {
+            setTimeout(() => playPluck(f, 0.045, 1.3), idx * 65);
+          });
+        }
+
+        return { toggle, chimeWish };
+      })();
+
+      // ========================================================================
+      // Main Animation Loop (60fps, Fail-Safe Unified Depth-Sorted Painter)
+      // ========================================================================
+      let lastTimestamp = 0;
+      let nextAutoMeteorTime = 3.5;
+
+      function render(timestamp) {
+        try {
+          const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.05) || 0.016;
+          lastTimestamp = timestamp;
+          const time = timestamp * 0.001;
+
+          if (time >= nextAutoMeteorTime) {
+            spawnShootingStar();
+            nextAutoMeteorTime = time + 5.5 + Math.random() * 6.5;
+          }
+
+          // 1. Smoothly interpolate theme colors & snow-load physics
+          const target = THEMES[currentThemeKey];
+          const blend = 1 - Math.exp(-dt * 4.5);
+          lerpColor(visual.bgTop, target.bgTop, blend);
+          lerpColor(visual.bgMid, target.bgMid, blend);
+          lerpColor(visual.nebulaA, target.nebulaA, blend);
+          lerpColor(visual.nebulaB, target.nebulaB, blend);
+          visual.auroraStrength = lerp(visual.auroraStrength, target.auroraStrength, blend);
+          lerpColor(visual.barkDark, target.barkDark, blend);
+          lerpColor(visual.barkLight, target.barkLight, blend);
+          lerpColor(visual.foliageDark, target.foliageDark, blend);
+          lerpColor(visual.foliageMid, target.foliageMid, blend);
+          lerpColor(visual.foliageLight, target.foliageLight, blend);
+          lerpColor(visual.snowBlanketColor, target.snowBlanketColor, blend);
+          visual.snowBlanketAlpha = lerp(visual.snowBlanketAlpha, target.snowBlanketAlpha, blend);
+          visual.snowWeight = lerp(visual.snowWeight, target.snowWeight, blend);
+          lerpColor(visual.ribbonCore, target.ribbonCore, blend);
+          lerpColor(visual.ribbonGlow, target.ribbonGlow, blend);
+          const targetRibbonStrength = ribbonEnabled ? target.ribbonStrength : 0;
+          visual.ribbonStrength = lerp(visual.ribbonStrength, targetRibbonStrength, blend);
+          lerpColor(visual.sparkleA, target.sparkleA, blend);
+          lerpColor(visual.sparkleB, target.sparkleB, blend);
+          lerpColor(visual.starCore, target.starCore, blend);
+          lerpColor(visual.starGlow, target.starGlow, blend);
+          lerpColor(visual.ringColor, target.ringColor, blend);
+          visual.snowDensity = lerp(visual.snowDensity, target.snowDensity, blend);
+          lerpColor(visual.snowTint, target.snowTint, blend);
+          for (let b = 0; b < 4; b++) {
+            lerpColor(visual.baubles[b], target.baubles[b], blend);
+          }
+          for (let g = 0; g < 3; g++) {
+            lerpColor(visual.gifts[g].box, target.gifts[g].box, blend);
+            lerpColor(visual.gifts[g].shade, target.gifts[g].shade, blend);
+            lerpColor(visual.gifts[g].ribbon, target.gifts[g].ribbon, blend);
+          }
+
+          // 2. Update camera inertia & damping
+          if (!camera.isDragging) {
+            camera.rotY += camera.velY;
+            camera.velY = lerp(camera.velY, camera.baseSpeed, 0.035);
+          }
+          camera.rotX = lerp(camera.rotX, camera.targetRotX, 0.09);
+          camera.zoom = lerp(camera.zoom, camera.targetZoom, 0.1);
+
+          // 3. Draw Deep Velvet Night Sky + Cosmic Nebula
+          const bgGrad = ctx.createRadialGradient(
+            width * 0.5,
+            height * 0.44,
+            10,
+            width * 0.5,
+            height * 0.5,
+            Math.max(width, height) * 0.85
+          );
+          bgGrad.addColorStop(0, rgb(visual.bgMid, 1));
+          bgGrad.addColorStop(0.65, rgb(visual.bgTop, 1));
+          bgGrad.addColorStop(1, '#020204');
+          ctx.fillStyle = bgGrad;
+          ctx.fillRect(0, 0, width, height);
+
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          const neb1 = ctx.createRadialGradient(width * 0.32, height * 0.32, 0, width * 0.32, height * 0.32, width * 0.48);
+          neb1.addColorStop(0, rgb(visual.nebulaA, 0.11));
+          neb1.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = neb1;
+          ctx.fillRect(0, 0, width, height);
+
+          const neb2 = ctx.createRadialGradient(width * 0.72, height * 0.52, 0, width * 0.72, height * 0.52, width * 0.45);
+          neb2.addColorStop(0, rgb(visual.nebulaB, 0.1));
+          neb2.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = neb2;
+          ctx.fillRect(0, 0, width, height);
+          ctx.restore();
+
+          // 4. Draw Aurora Borealis Curtains
+          drawAuroraCurtains(time);
+
+          // 5. Draw Distant Twinkling Stars & Soft Bokeh
+          for (let i = 0; i < bgStars.length; i++) {
+            const st = bgStars[i];
+            const sx = ((st.nx * width - camera.rotY * st.parallax) % width + width) % width;
+            const sy = st.ny * height;
+            const twinkle = 0.55 + 0.45 * Math.sin(time * st.speed + st.phase);
+            const alpha = st.alpha * twinkle;
+
+            if (st.isBokeh) {
+              const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, st.radius);
+              g.addColorStop(0, rgb(visual.ribbonGlow, alpha));
+              g.addColorStop(1, 'rgba(0,0,0,0)');
+              ctx.fillStyle = g;
+              ctx.beginPath();
+              ctx.arc(sx, sy, st.radius, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              ctx.fillStyle = `rgba(255, 248, 250, ${alpha.toFixed(3)})`;
+              ctx.beginPath();
+              ctx.arc(sx, sy, st.radius, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+
+          updateAndDrawShootingStars();
+          updateAndDrawSnow(time, 'bg');
+
+          const cosY = Math.cos(camera.rotY);
+          const sinY = Math.sin(camera.rotY);
+          const cosX = Math.cos(camera.rotX);
+          const sinX = Math.sin(camera.rotX);
+          const metrics = getStageMetrics();
+
+          // 6. Ground Starlight Galaxy Vortex, Reflective Pool & Constellation Rings
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+
+          const baseProj = project3D(0, -8, 0, cosY, sinY, cosX, sinX, metrics);
+          const poolRx = TREE_BASE_RADIUS * 1.48 * baseProj.scale;
+          const poolRy = poolRx * 0.34;
+          ctx.save();
+          ctx.translate(baseProj.sx, baseProj.sy);
+          ctx.scale(1, poolRy / Math.max(1, poolRx));
+          const poolGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, poolRx);
+          poolGrad.addColorStop(0, rgb(visual.ribbonGlow, 0.2));
+          poolGrad.addColorStop(0.55, rgb(visual.ringColor, 0.08));
+          poolGrad.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = poolGrad;
+          ctx.beginPath();
+          ctx.arc(0, 0, poolRx, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          groundRings.forEach((ring) => {
+            const rotOffset = time * ring.speed;
+            for (let i = 0; i < ring.dots.length; i++) {
+              const d = ring.dots[i];
+              const a = d.angle + rotOffset;
+              const wx = Math.cos(a) * d.radius;
+              const wz = Math.sin(a) * d.radius;
+              const p = project3D(wx, -8, wz, cosY, sinY, cosX, sinX, metrics);
+              const depthFade = p.z < 0 ? 1 : Math.max(0.25, 1 - p.z / 320);
+              ctx.fillStyle = rgb(visual.ringColor, d.alpha * depthFade * 0.72);
+              ctx.beginPath();
+              ctx.arc(p.sx, p.sy, Math.max(0.7, d.size * p.scale), 0, Math.PI * 2);
+              ctx.fill();
+            }
+          });
+
+          const fireflySpr = getGlowSprite(visual.starCore[0], visual.starCore[1], visual.starCore[2], 0.34);
+          for (let i = 0; i < vortexParticles.length; i++) {
+            const vp = vortexParticles[i];
+            const a = vp.angle + time * vp.speed;
+            const wy = vp.yBase + Math.sin(time * 1.4 + vp.bobPhase) * vp.bobAmp;
+            const wx = Math.cos(a) * vp.radius;
+            const wz = Math.sin(a) * vp.radius;
+            const p = project3D(wx, wy, wz, cosY, sinY, cosX, sinX, metrics);
+            const depthFade = p.z < 0 ? 1 : Math.max(0.25, 1 - p.z / 300);
+
+            if (vp.isFirefly) {
+              const pulse = 0.45 + 0.55 * Math.sin(time * 2.5 + vp.bobPhase);
+              const r = Math.max(2.6, vp.size * 2.4 * p.scale);
+              ctx.globalAlpha = vp.alpha * depthFade * pulse;
+              ctx.drawImage(fireflySpr, p.sx - r, p.sy - r, r * 2, r * 2);
+            } else {
+              ctx.globalAlpha = 1;
+              ctx.fillStyle = rgb(visual.ringColor, vp.alpha * depthFade);
+              ctx.beginPath();
+              ctx.arc(p.sx, p.sy, Math.max(0.7, vp.size * p.scale), 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+          ctx.restore();
+
+          // Grounded Snowy/Earthy Root Mound beneath the trunk
+          drawGroundMound(cosY, sinY, cosX, sinX, metrics);
+
+          // 7. Unified Back-to-Front 3D Painter's-Algorithm Render List
+          renderList.length = 0;
+
+          // A. Tapered Bark Trunk & Woody Limbs
+          for (let i = 0; i < trunkSegments.length; i++) {
+            const seg = trunkSegments[i];
+            const sag = seg.isLimb ? visual.snowWeight * seg.snowLoad : 0;
+            const p0 = project3D(seg.x0, seg.y0 - sag * 0.6, seg.z0, cosY, sinY, cosX, sinX, metrics);
+            const p1 = project3D(seg.x1, seg.y1 - sag, seg.z1, cosY, sinY, cosX, sinX, metrics);
+            renderList.push({
+              type: 'trunk',
+              depth: (p0.z + p1.z) * 0.5,
+              seg,
+              p0,
+              p1
+            });
+          }
+
+          // B. Directional Feathery Pine-Needle Sprays
+          for (let i = 0; i < needleClusters.length; i++) {
+            const nc = needleClusters[i];
+            const sag = visual.snowWeight * nc.snowLoad;
+            const proj = project3D(nc.x, nc.y - sag, nc.z, cosY, sinY, cosX, sinX, metrics);
+            renderList.push({
+              type: 'needle',
+              depth: proj.z,
+              nc,
+              proj
+            });
+          }
+
+          // C. Upper-Surface (+y) Pillowy Snow Tufts (slightly forward in depth so they sit atop needles)
+          if (visual.snowBlanketAlpha > 0.03) {
+            for (let i = 0; i < snowPillows.length; i++) {
+              const sp = snowPillows[i];
+              const sag = visual.snowWeight * sp.snowLoad;
+              const proj = project3D(sp.x, sp.y - sag, sp.z, cosY, sinY, cosX, sinX, metrics);
+              renderList.push({
+                type: 'snow',
+                depth: proj.z - 2.2,
+                sp,
+                proj
+              });
+            }
+          }
+
+          // D. Warm Twinkling Fairy-Light Bulbs
+          for (let i = 0; i < fairyLights.length; i++) {
+            const fl = fairyLights[i];
+            const sag = visual.snowWeight * fl.snowLoad;
+            const proj = project3D(fl.x, fl.y - sag, fl.z, cosY, sinY, cosX, sinX, metrics);
+            if (proj.z > 65) continue;
+            renderList.push({
+              type: 'light',
+              depth: proj.z - 2.8,
+              fl,
+              proj
+            });
+          }
+
+          // E. Slender 3.5-Turn Micro-LED Spiral Light Strip Segments
+          if (visual.ribbonStrength > 0.02 && ribbonNodes.length > 1) {
+            ribbonPulsePhase = (ribbonPulsePhase + dt * 0.14) % 1;
+            const projRibbon = new Array(ribbonNodes.length);
+            for (let i = 0; i < ribbonNodes.length; i++) {
+              const rn = ribbonNodes[i];
+              const sag = visual.snowWeight * rn.snowLoad;
+              projRibbon[i] = project3D(rn.x, rn.y - sag, rn.z, cosY, sinY, cosX, sinX, metrics);
+            }
+
+            for (let i = 0; i < projRibbon.length - 1; i++) {
+              const p0 = projRibbon[i];
+              const p1 = projRibbon[i + 1];
+              const avgZ = (p0.z + p1.z) * 0.5;
+              renderList.push({
+                type: 'ribbon',
+                depth: avgZ - 3.5,
+                p0,
+                p1,
+                avgZ,
+                node: ribbonNodes[i]
+              });
+            }
+          }
+
+          // F. 26 Hanging 3D Metallic Baubles
+          for (let i = 0; i < baubles.length; i++) {
+            const bauble = baubles[i];
+            const sag = visual.snowWeight * bauble.snowLoad;
+            const proj = project3D(bauble.x, bauble.y - sag, bauble.z, cosY, sinY, cosX, sinX, metrics);
+            const topProj = project3D(bauble.x, bauble.stringTopY - sag, bauble.z, cosY, sinY, cosX, sinX, metrics);
+            renderList.push({
+              type: 'bauble',
+              depth: proj.z - 1.5,
+              bauble,
+              proj,
+              topProj
+            });
+          }
+
+          // G. 10 3D Perspective Gift Boxes
+          for (let i = 0; i < giftBoxes.length; i++) {
+            const box = giftBoxes[i];
+            const hw = box.w * 0.5;
+            const hh = box.h * 0.5;
+            const hd = box.d * 0.5;
+            const cy = Math.cos(box.yaw);
+            const sy = Math.sin(box.yaw);
+            const sag = visual.snowWeight * box.snowLoad;
+
+            const transformPt = (lx, ly, lz) => {
+              const wx = box.x + (lx * cy - lz * sy);
+              const wy = box.y - sag + ly;
+              const wz = box.z + (lx * sy + lz * cy);
+              return project3D(wx, wy, wz, cosY, sinY, cosX, sinX, metrics);
+            };
+
+            const corners = [
+              transformPt(-hw, -hh, -hd),
+              transformPt( hw, -hh, -hd),
+              transformPt( hw, -hh,  hd),
+              transformPt(-hw, -hh,  hd),
+              transformPt(-hw,  hh, -hd),
+              transformPt( hw,  hh, -hd),
+              transformPt( hw,  hh,  hd),
+              transformPt(-hw,  hh,  hd)
+            ];
+            const centerProj = project3D(box.x, box.y - sag, box.z, cosY, sinY, cosX, sinX, metrics);
+            const topCenter = transformPt(0, hh + 1.5, 0);
+            const bowLeft = transformPt(-hw * 0.45, hh + 5.4, -hd * 0.15);
+            const bowRight = transformPt(hw * 0.45, hh + 5.4, hd * 0.15);
+
+            renderList.push({
+              type: 'gift',
+              depth: centerProj.z,
+              box,
+              corners,
+              topCenter,
+              bowLeft,
+              bowRight
+            });
+          }
+
+          // Sort all 3D tree elements strictly back-to-front (largest Z first)
+          renderList.sort((a, b) => b.depth - a.depth);
+
+          // Pre-fetch glow sprites for this frame
+          const sprA = getGlowSprite(visual.sparkleA[0], visual.sparkleA[1], visual.sparkleA[2], 0.34);
+          const sprB = getGlowSprite(visual.sparkleB[0], visual.sparkleB[1], visual.sparkleB[2], 0.34);
+          const ribbonBulbSpr = getGlowSprite(visual.ribbonGlow[0], visual.ribbonGlow[1], visual.ribbonGlow[2], 0.36);
+
+          // Render every sorted 3D item cleanly
+          for (let i = 0; i < renderList.length; i++) {
+            const item = renderList[i];
+
+            switch (item.type) {
+              case 'trunk':
+                drawTrunkSegmentItem(item);
+                break;
+
+              case 'needle': {
+                const { nc, proj } = item;
+                const depthShade = proj.z < 0 ? 1.06 : Math.max(0.42, 1 - proj.z / 260);
+                const cBase = nc.shadeZone === 0
+                  ? visual.foliageDark
+                  : nc.shadeZone === 1
+                    ? visual.foliageMid
+                    : visual.foliageLight;
+
+                const spr = getNeedleSpraySprite(
+                  cBase[0] * depthShade,
+                  cBase[1] * depthShade,
+                  cBase[2] * depthShade,
+                  nc.variant
+                );
+
+                const rdx = nc.dirX * cosY - nc.dirZ * sinY;
+                const angle2D = Math.atan2(-nc.dirY, rdx);
+                const drawSize = Math.max(6.0, nc.size * 1.72 * proj.scale);
+                const halfDraw = drawSize * 0.5;
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 1;
+                ctx.translate(proj.sx, proj.sy);
+                ctx.rotate(angle2D);
+                ctx.drawImage(spr, -halfDraw, -halfDraw, drawSize, drawSize);
+                ctx.restore();
+                break;
+              }
+
+              case 'snow': {
+                const { sp, proj } = item;
+                const depthShade = proj.z < 0 ? 1.0 : Math.max(0.48, 1 - proj.z / 260);
+                const tuftSpr = getSnowTuftSprite(
+                  visual.snowBlanketColor[0] * depthShade,
+                  visual.snowBlanketColor[1] * depthShade,
+                  visual.snowBlanketColor[2] * depthShade
+                );
+                const drawW = Math.max(5.0, sp.size * 1.85 * proj.scale);
+                const drawH = drawW * 0.58 * (0.6 + 0.4 * visual.snowBlanketAlpha);
+                const alpha = visual.snowBlanketAlpha * (0.78 + 0.2 * sp.shadeSeed);
+
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = Math.min(1, alpha);
+                ctx.drawImage(tuftSpr, proj.sx - drawW * 0.5, proj.sy - drawH * 0.5, drawW, drawH);
+                break;
+              }
+
+              case 'light': {
+                const { fl, proj } = item;
+                const twinkle = 0.35 + 0.65 * Math.sin(time * fl.speed + fl.phase);
+                const spr = fl.group === 0 ? sprA : sprB;
+                const r = Math.max(2.8, fl.size * 2.5 * proj.scale * (0.75 + 0.4 * twinkle));
+
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.globalAlpha = twinkle * 0.9;
+                ctx.drawImage(spr, proj.sx - r, proj.sy - r, r * 2, r * 2);
+                break;
+              }
+
+              case 'ribbon': {
+                const { p0, p1, avgZ, node } = item;
+                const depthFade = avgZ < 15 ? 1.0 : Math.max(0.22, 1 - (avgZ - 15) / 220);
+                const taper = 1 - node.t * 0.28;
+
+                const distToPulse = Math.abs(((node.t - ribbonPulsePhase + 1.5) % 1) - 0.5);
+                const shimmerWave = Math.exp(-(distToPulse * distToPulse) / 0.0045);
+                const alpha = depthFade * visual.ribbonStrength * (0.78 + 0.22 * shimmerWave);
+
+                if (alpha >= 0.03) {
+                  ctx.globalCompositeOperation = 'lighter';
+                  ctx.globalAlpha = 1;
+                  ctx.lineCap = 'round';
+                  ctx.lineJoin = 'round';
+
+                  // Restrained soft outer halo
+                  ctx.strokeStyle = rgb(visual.ribbonGlow, alpha * 0.28);
+                  ctx.lineWidth = Math.max(2.2, 4.4 * p0.scale * taper);
+                  ctx.beginPath();
+                  ctx.moveTo(p0.sx, p0.sy);
+                  ctx.lineTo(p1.sx, p1.sy);
+                  ctx.stroke();
+
+                  // Sleek, fine luminous filament core
+                  ctx.strokeStyle = rgb(visual.ribbonCore, alpha * 0.92);
+                  ctx.lineWidth = Math.max(0.95, 1.55 * p0.scale * taper);
+                  ctx.beginPath();
+                  ctx.moveTo(p0.sx, p0.sy);
+                  ctx.lineTo(p1.sx, p1.sy);
+                  ctx.stroke();
+
+                  // Pinpoint micro-LED bulbs along the wire
+                  if (node.isBulb && avgZ < 45) {
+                    const twinkle = 0.55 + 0.45 * Math.sin(time * 2.8 + node.bulbPhase);
+                    const bulbR = Math.max(2.6, (4.4 + shimmerWave * 2.2) * p0.scale * taper);
+                    ctx.globalAlpha = alpha * (0.55 + 0.45 * twinkle);
+                    ctx.drawImage(ribbonBulbSpr, p0.sx - bulbR, p0.sy - bulbR, bulbR * 2, bulbR * 2);
+                  }
+                }
+                break;
+              }
+
+              case 'bauble':
+                drawBaubleItem(item, time);
+                break;
+
+              case 'gift':
+                drawGiftBoxItem(item);
+                break;
+            }
+          }
+
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.globalAlpha = 1;
+
+          // 8. Crowning 3D Faceted Star + Volumetric God Rays
+          drawApexStar(time, cosY, sinY, cosX, sinX, metrics);
+
+          // 9. Midground & Foreground Snowfall
+          updateAndDrawSnow(time, 'mid');
+          updateAndDrawSnow(time, 'fg');
+
+          // 10. Interactive Wish Fireworks
+          updateAndDrawWishFireworks();
+        } catch (err) {
+          console.error('Starlit Christmas render frame warning:', err);
+        }
+
+        requestAnimationFrame(render);
+      }
+
+      // ========================================================================
+      // Responsive Canvas Sizing
+      // ========================================================================
+      function handleResize() {
+        width = window.innerWidth || document.documentElement.clientWidth || 390;
+        height = window.innerHeight || document.documentElement.clientHeight || 844;
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        canvas.width = Math.max(1, Math.floor(width * dpr));
+        canvas.height = Math.max(1, Math.floor(height * dpr));
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      window.addEventListener('resize', handleResize);
+
+      // ========================================================================
+      // Pointer & Touch Interactivity (Spin, Tilt, Zoom, Wish Fireworks)
+      // ========================================================================
+      function onPointerDown(x, y) {
+        camera.isDragging = true;
+        camera.lastX = x;
+        camera.lastY = y;
+        camera.dragDistance = 0;
+      }
+
+      function onPointerMove(x, y) {
+        if (!camera.isDragging) return;
+        const dx = x - camera.lastX;
+        const dy = y - camera.lastY;
+        camera.lastX = x;
+        camera.lastY = y;
+        camera.dragDistance += Math.hypot(dx, dy);
+
+        camera.velY = dx * 0.0065;
+        camera.rotY += camera.velY;
+        camera.targetRotX = Math.max(-0.12, Math.min(0.42, camera.targetRotX + dy * 0.0022));
+      }
+
+      function onPointerUp(x, y) {
+        if (camera.isDragging && camera.dragDistance < 10) {
+          spawnWishFirework(x, y, false);
+          MusicBox.chimeWish();
+        }
+        camera.isDragging = false;
+      }
+
+      canvas.addEventListener('mousedown', (e) => onPointerDown(e.clientX, e.clientY));
+      window.addEventListener('mousemove', (e) => onPointerMove(e.clientX, e.clientY));
+      window.addEventListener('mouseup', (e) => {
+        if (camera.isDragging) onPointerUp(e.clientX, e.clientY);
+      });
+
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = -Math.sign(e.deltaY) * 0.08;
+        camera.targetZoom = Math.max(0.72, Math.min(1.55, camera.targetZoom + delta));
+      }, { passive: false });
+
+      canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
+        } else if (e.touches.length === 2) {
+          camera.isDragging = false;
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          camera.pinchStartDist = Math.hypot(dx, dy);
+          camera.pinchStartZoom = camera.targetZoom;
+        }
+      }, { passive: true });
+
+      canvas.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1) {
+          onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+        } else if (e.touches.length === 2 && camera.pinchStartDist > 0) {
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          const dist = Math.hypot(dx, dy);
+          const ratio = dist / camera.pinchStartDist;
+          camera.targetZoom = Math.max(0.72, Math.min(1.55, camera.pinchStartZoom * ratio));
+        }
+      }, { passive: true });
+
+      canvas.addEventListener('touchend', (e) => {
+        if (e.changedTouches.length === 1 && camera.isDragging) {
+          onPointerUp(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        }
+        if (e.touches.length < 2) camera.pinchStartDist = 0;
+      });
+
+      // ========================================================================
+      // Theme Switcher, Top Action Pills & Blessing Modal
+      // ========================================================================
+      function setThemeMode(modeKey, index) {
+        if (!THEMES[modeKey]) return;
+        currentThemeKey = modeKey;
+        document.body.setAttribute('data-theme', modeKey);
+
+        modeButtons.forEach((btn, idx) => {
+          const isMatch = btn.dataset.mode === modeKey;
+          btn.classList.toggle('active', isMatch);
+          if (isMatch && typeof index !== 'number') {
+            index = idx;
+          }
+        });
+
+        if (typeof index === 'number' && modeSlider) {
+          modeSlider.style.transform = `translateX(${index * 100}%)`;
+        }
+
+        if (modeKey === 'snow' && !snowEnabled) {
+          snowEnabled = true;
+          snowToggleBtn.classList.add('is-active');
+        }
+
+        spawnWishFirework(width * 0.5, height * 0.34, false);
+        MusicBox.chimeWish();
+      }
+
+      modeButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          setThemeMode(btn.dataset.mode, Number(btn.dataset.index));
+        });
+      });
+
+      snowToggleBtn.addEventListener('click', () => {
+        snowEnabled = !snowEnabled;
+        snowToggleBtn.classList.toggle('is-active', snowEnabled);
+      });
+
+      ribbonToggleBtn.addEventListener('click', () => {
+        ribbonEnabled = !ribbonEnabled;
+        ribbonToggleBtn.classList.toggle('is-active', ribbonEnabled);
+      });
+
+      musicBtn.addEventListener('click', () => {
+        const playing = MusicBox.toggle();
+        musicBtn.classList.toggle('is-active', playing);
+      });
+
+      wishBtn.addEventListener('click', () => {
+        spawnShootingStar();
+        spawnWishFirework(width * (0.38 + Math.random() * 0.24), height * 0.26, true);
+        camera.velY = 0.022;
+        MusicBox.chimeWish();
+      });
+
+      cleanModeBtn.addEventListener('click', () => {
+        document.body.classList.add('clean-mode');
+      });
+
+      restoreUiBtn.addEventListener('click', () => {
+        document.body.classList.remove('clean-mode');
+      });
+
+      function openBlessingModal() {
+        inputTitle.value = elTitle.textContent;
+        inputCn.value = elCn.textContent;
+        inputSub.value = elSub.textContent;
+        blessingModal.classList.add('open');
+      }
+
+      function closeBlessingModal() {
+        blessingModal.classList.remove('open');
+      }
+
+      editBlessingBtn.addEventListener('click', openBlessingModal);
+      blessingTrigger.addEventListener('click', openBlessingModal);
+      closeModalBtn.addEventListener('click', closeBlessingModal);
+
+      blessingModal.addEventListener('click', (e) => {
+        if (e.target === blessingModal) closeBlessingModal();
+      });
+
+      presetChips.forEach((chip) => {
+        chip.addEventListener('click', () => {
+          inputTitle.value = chip.dataset.title || '';
+          inputCn.value = chip.dataset.cn || '';
+          inputSub.value = chip.dataset.sub || '';
+        });
+      });
+
+      saveBlessingBtn.addEventListener('click', () => {
+        const t = inputTitle.value.trim();
+        const c = inputCn.value.trim();
+        const s = inputSub.value.trim();
+        if (t) elTitle.textContent = t;
+        if (c) elCn.textContent = c;
+        if (s) elSub.textContent = s;
+        closeBlessingModal();
+        spawnWishFirework(width * 0.5, height * 0.72, false);
+        MusicBox.chimeWish();
+      });
+
+      // ========================================================================
+      // Immediate & Fail-Safe Scene Initialization + 60fps Loop Start
+      // ========================================================================
+      function boot() {
+        handleResize();
+        initBotanicalTree();
+        initSpiralRibbons();
+        initOrnamentsAndGifts();
+        initGroundGalaxy();
+        initSkyAndSnow();
+        requestAnimationFrame(render);
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+      } else {
+        boot();
+      }
+    })();
+  </script>
+</body>
+</html>
